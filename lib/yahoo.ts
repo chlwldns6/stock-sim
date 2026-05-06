@@ -483,7 +483,15 @@ async function fetchBatch(batch: typeof STOCKS): Promise<Record<string, any>> {
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
+// 60초 캐시 — Yahoo 과호출 방지 + 타임아웃 리스크 감소
+let stockCache: { data: StockPrice[]; ts: number } | null = null;
+const CACHE_TTL_MS = 60 * 1000;
+
 export async function fetchStockPrices(): Promise<StockPrice[]> {
+  if (stockCache && Date.now() - stockCache.ts < CACHE_TTL_MS) {
+    return stockCache.data;
+  }
+
   const BATCH_SIZE = 10;
   const batches: typeof STOCKS[] = [];
   for (let i = 0; i < STOCKS.length; i += BATCH_SIZE) {
@@ -498,11 +506,10 @@ export async function fetchStockPrices(): Promise<StockPrice[]> {
   }
   const json = Object.assign({}, ...results);
 
-  return STOCKS.map(stock => {
-    const data = json[stock.ticker];
-    const closes: (number | null)[] = data?.close ?? [];
-    const prevClose: number = data?.chartPreviousClose ?? 0;
-    // null 제외하고 마지막 유효한 종가 사용, 없으면 전일 종가
+  const data = STOCKS.map(stock => {
+    const d = json[stock.ticker];
+    const closes: (number | null)[] = d?.close ?? [];
+    const prevClose: number = d?.chartPreviousClose ?? 0;
     const lastValid = [...closes].reverse().find(v => v != null) ?? null;
     const price = lastValid ?? prevClose;
     const change = prevClose ? price - prevClose : 0;
@@ -517,4 +524,7 @@ export async function fetchStockPrices(): Promise<StockPrice[]> {
       changePercent: Math.round(changePercent * 100) / 100,
     };
   });
+
+  stockCache = { data, ts: Date.now() };
+  return data;
 }

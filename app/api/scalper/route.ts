@@ -1,5 +1,8 @@
 export const maxDuration = 60;
 
+// 동시 실행 방지 플래그
+let scalperRunning = false;
+
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { fetchStockPrices } from '@/lib/yahoo';
@@ -13,6 +16,11 @@ export async function POST() {
   if (isKoreanHoliday(new Date())) {
     return NextResponse.json({ action: 'HOLD', reason: '오늘은 공휴일(KRX 휴장일)입니다.' });
   }
+
+  if (scalperRunning) {
+    return NextResponse.json({ action: 'HOLD', reason: '단타봇이 이미 실행 중입니다.' });
+  }
+  scalperRunning = true;
 
   try {
     const [stocks, portfolio, holdings] = await Promise.all([
@@ -192,5 +200,7 @@ JSON만 답하세요.`;
     return NextResponse.json({ ...decision, qty, price: stock.price });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
+  } finally {
+    scalperRunning = false;
   }
 }

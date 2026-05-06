@@ -356,7 +356,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
 
   const [showResetModal, setShowResetModal] = useState(false);
-  const [pendingCapital, setPendingCapital] = useState(10000000);
+  const [pendingCapitals, setPendingCapitals] = useState({ user: 10000000, ai: 10000000, scalper: 10000000 });
 
   const [agentRunning, setAgentRunning] = useState(false);
   const [scalperRunning, setScalperRunning] = useState(false);
@@ -400,6 +400,12 @@ export default function Home() {
       if (Array.isArray(stockData)) setStocks(stockData);
       setAi({ portfolio: aiPort, holdings: aiHold });
       setUser({ portfolio: uPort, holdings: uHold });
+
+      // 포트폴리오가 없는 상태(DB 초기화 등)면 금액 선택 모달 자동 표시
+      if (!uPort || uPort.error) {
+        setPendingCapitals({ user: 10000000, ai: 10000000, scalper: 10000000 });
+        setShowResetModal(true);
+      }
       setScalper({ portfolio: scPort?.cash !== undefined ? scPort : null, holdings: Array.isArray(scHold) ? scHold : [] });
       if (Array.isArray(tradeData)) setAllTrades(tradeData);
       setLastUpdated(new Date().toLocaleTimeString('ko-KR'));
@@ -551,9 +557,9 @@ export default function Home() {
     setQuoteLoading(false);
   }
 
-  async function resetGame(initialCapital: number) {
+  async function resetGame(capitals: { user: number; ai: number; scalper: number }) {
     try {
-      await fetch('/api/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initialCapital }) });
+      await fetch('/api/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(capitals) });
       setChartData([]);
       setShowResetModal(false);
       await fetchAll();
@@ -633,32 +639,58 @@ export default function Home() {
     border: `1px solid ${on ? color : '#2d3148'}`, borderRadius: '6px', cursor: 'pointer',
   });
 
-  const CAPITAL_OPTIONS = [
-    { label: '100만원', value: 1000000 },
-    { label: '300만원', value: 3000000 },
-    { label: '500만원', value: 5000000 },
-    { label: '1000만원', value: 10000000 },
-  ];
-
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f1117', color: '#e2e8f0', fontFamily: 'Arial, sans-serif' }}>
 
       {/* 초기화 모달 */}
       {showResetModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: '#1a1d27', border: '1px solid #2d3148', borderRadius: '12px', padding: '28px', width: '340px' }}>
-            <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '6px' }}>게임 초기화</div>
-            <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '20px' }}>시작 금액을 선택하세요. 모든 거래·보유 내역이 초기화됩니다.</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '20px' }}>
-              {CAPITAL_OPTIONS.map(({ label, value }) => (
-                <button key={value} onClick={() => setPendingCapital(value)} style={{ padding: '14px', backgroundColor: pendingCapital === value ? '#8b5cf6' : '#0f1117', border: `2px solid ${pendingCapital === value ? '#8b5cf6' : '#2d3148'}`, borderRadius: '8px', color: pendingCapital === value ? '#fff' : '#94a3b8', cursor: 'pointer', fontSize: '15px', fontWeight: 'bold', transition: 'all 0.15s' }}>
-                  {label}
-                </button>
-              ))}
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ backgroundColor: '#1a1d27', border: '1px solid #2d3148', borderRadius: '14px', padding: '28px', width: '420px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ fontSize: '17px', fontWeight: 'bold', marginBottom: '4px' }}>🔄 게임 초기화</div>
+            <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '22px' }}>플레이어별 시작 금액을 선택하세요. 모든 거래·보유 내역이 초기화됩니다.</div>
+
+            {/* 나 */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#8b5cf6', marginBottom: '8px' }}>🙋 나</div>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {([1000000, 3000000, 5000000, 10000000] as const).map(v => (
+                  <button key={v} onClick={() => setPendingCapitals(p => ({ ...p, user: v }))}
+                    style={{ flex: 1, padding: '10px 0', backgroundColor: pendingCapitals.user === v ? '#8b5cf6' : '#0f1117', border: `2px solid ${pendingCapitals.user === v ? '#8b5cf6' : '#2d3148'}`, borderRadius: '8px', color: pendingCapitals.user === v ? '#fff' : '#94a3b8', cursor: 'pointer', fontSize: '13px', fontWeight: pendingCapitals.user === v ? 'bold' : 'normal' }}>
+                    {v === 1000000 ? '100만' : v === 3000000 ? '300만' : v === 5000000 ? '500만' : '1000만'}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => setShowResetModal(false)} style={{ flex: 1, padding: '10px', backgroundColor: '#0f1117', color: '#64748b', border: '1px solid #2d3148', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>취소</button>
-              <button onClick={() => resetGame(pendingCapital)} style={{ flex: 1, padding: '10px', backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>초기화</button>
+
+            {/* AI */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '8px' }}>🤖 AI</div>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {([1000000, 3000000, 5000000, 10000000] as const).map(v => (
+                  <button key={v} onClick={() => setPendingCapitals(p => ({ ...p, ai: v }))}
+                    style={{ flex: 1, padding: '10px 0', backgroundColor: pendingCapitals.ai === v ? '#f59e0b' : '#0f1117', border: `2px solid ${pendingCapitals.ai === v ? '#f59e0b' : '#2d3148'}`, borderRadius: '8px', color: pendingCapitals.ai === v ? '#000' : '#94a3b8', cursor: 'pointer', fontSize: '13px', fontWeight: pendingCapitals.ai === v ? 'bold' : 'normal' }}>
+                    {v === 1000000 ? '100만' : v === 3000000 ? '300만' : v === 5000000 ? '500만' : '1000만'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 단타봇 */}
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#ef4444', marginBottom: '8px' }}>⚡ 단타봇</div>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {([1000000, 3000000, 5000000, 10000000] as const).map(v => (
+                  <button key={v} onClick={() => setPendingCapitals(p => ({ ...p, scalper: v }))}
+                    style={{ flex: 1, padding: '10px 0', backgroundColor: pendingCapitals.scalper === v ? '#ef4444' : '#0f1117', border: `2px solid ${pendingCapitals.scalper === v ? '#ef4444' : '#2d3148'}`, borderRadius: '8px', color: pendingCapitals.scalper === v ? '#fff' : '#94a3b8', cursor: 'pointer', fontSize: '13px', fontWeight: pendingCapitals.scalper === v ? 'bold' : 'normal' }}>
+                    {v === 1000000 ? '100만' : v === 3000000 ? '300만' : v === 5000000 ? '500만' : '1000만'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid #2d3148', paddingTop: '16px', display: 'flex', gap: '8px' }}>
+              <button onClick={() => setShowResetModal(false)} style={{ flex: 1, padding: '11px', backgroundColor: '#0f1117', color: '#64748b', border: '1px solid #2d3148', borderRadius: '7px', cursor: 'pointer', fontSize: '13px' }}>취소</button>
+              <button onClick={() => resetGame(pendingCapitals)} style={{ flex: 2, padding: '11px', backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '7px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>초기화 확인</button>
             </div>
           </div>
         </div>
@@ -678,7 +710,7 @@ export default function Home() {
             {marketStatus.open ? '🟢 장중' : `🔴 장외${marketStatus.nextOpen ? ` · ${marketStatus.nextOpen} 개장` : ''}`}
           </span>
           <span style={{ fontSize: '11px', color: '#475569', padding: '2px 8px', border: '1px solid #2d3148', borderRadius: '4px' }}>가상 시뮬레이션</span>
-          <button onClick={() => { setPendingCapital(10000000); setShowResetModal(true); }} style={{ padding: '4px 14px', backgroundColor: '#1a1d27', color: '#ef4444', border: '1px solid #ef444466', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>🔄 초기화</button>
+          <button onClick={() => { setPendingCapitals({ user: 10000000, ai: 10000000, scalper: 10000000 }); setShowResetModal(true); }} style={{ padding: '4px 14px', backgroundColor: '#1a1d27', color: '#ef4444', border: '1px solid #ef444466', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>🔄 초기화</button>
         </div>
       </div>
 

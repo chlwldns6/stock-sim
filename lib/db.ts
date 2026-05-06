@@ -99,17 +99,17 @@ export async function savePerfPoint(player: string, totalValue: number) {
   await supabase.from('perf_history').delete().lt('recorded_at', sevenDaysAgo);
 }
 
-export async function resetGame(initialCapital: number = 10000000) {
+export async function resetGame(capitals: { user: number; ai: number; scalper: number } = { user: 10000000, ai: 10000000, scalper: 10000000 }) {
   await supabase.from('trades').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   await supabase.from('holdings').delete().neq('player', '');
   await supabase.from('perf_history').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-  await supabase.from('portfolios').update({ cash: initialCapital, initial_capital: initialCapital }).eq('player', 'ai');
-  await supabase.from('portfolios').update({ cash: initialCapital, initial_capital: initialCapital }).eq('player', 'user');
+  await supabase.from('portfolios').update({ cash: capitals.ai, initial_capital: capitals.ai }).eq('player', 'ai');
+  await supabase.from('portfolios').update({ cash: capitals.user, initial_capital: capitals.user }).eq('player', 'user');
   const { data: existing } = await supabase.from('portfolios').select('player').eq('player', 'scalper').single();
   if (existing) {
-    await supabase.from('portfolios').update({ cash: initialCapital, initial_capital: initialCapital }).eq('player', 'scalper');
+    await supabase.from('portfolios').update({ cash: capitals.scalper, initial_capital: capitals.scalper }).eq('player', 'scalper');
   } else {
-    await supabase.from('portfolios').insert({ player: 'scalper', cash: initialCapital, initial_capital: initialCapital });
+    await supabase.from('portfolios').insert({ player: 'scalper', cash: capitals.scalper, initial_capital: capitals.scalper });
   }
 }
 

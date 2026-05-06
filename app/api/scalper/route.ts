@@ -25,6 +25,9 @@ export async function POST() {
       return sum + (s ? s.price * h.qty : h.avg_price * h.qty);
     }, 0);
 
+    const deadlineCtx = getDeadlineContext();
+    const returnPct = ((totalAsset - 10000000) / 10000000 * 100).toFixed(2);
+
     // 보유 종목 상세
     const holdingText = holdings.length === 0
       ? '없음'
@@ -35,15 +38,14 @@ export async function POST() {
           return `${h.name}(${h.ticker}) ${h.qty}주 | 평균매수가 ${h.avg_price.toLocaleString()}원 | 현재수익률 ${pnl}% | 평가금액 ${evalAmt}원`;
         }).join('\n');
 
-    // 매수 후보: 상승률 TOP20 + 하락률 TOP5 (반등 노림)
+    // 매수 후보: 상승률 TOP20 + 하락률 TOP5 (반등 노림) — 최대 매수 가능 수량 표시
     const risingStocks = validStocks
       .filter(s => !holdingTickers.includes(s.ticker))
       .sort((a, b) => b.changePercent - a.changePercent)
       .slice(0, 20)
       .map(s => {
-        const qty40 = Math.floor(invest40 / s.price);
-        const qty70 = Math.floor(invest70 / s.price);
-        return `${s.name}(${s.ticker}): ${s.price.toLocaleString()}원 ${s.changePercent > 0 ? '+' : ''}${s.changePercent}% | 40%=${qty40}주, 70%=${qty70}주`;
+        const maxQty = Math.floor(portfolio.cash / s.price);
+        return `${s.name}(${s.ticker}): ${s.price.toLocaleString()}원 ${s.changePercent > 0 ? '+' : ''}${s.changePercent}% | 전액 투입 시 최대 ${maxQty}주`;
       });
 
     const reboundStocks = validStocks
@@ -51,9 +53,8 @@ export async function POST() {
       .sort((a, b) => a.changePercent - b.changePercent)
       .slice(0, 5)
       .map(s => {
-        const qty40 = Math.floor(invest40 / s.price);
-        const qty70 = Math.floor(invest70 / s.price);
-        return `[반등노림] ${s.name}(${s.ticker}): ${s.price.toLocaleString()}원 ${s.changePercent}% | 40%=${qty40}주, 70%=${qty70}주`;
+        const maxQty = Math.floor(portfolio.cash / s.price);
+        return `[반등노림] ${s.name}(${s.ticker}): ${s.price.toLocaleString()}원 ${s.changePercent}% | 전액 투입 시 최대 ${maxQty}주`;
       });
 
     const buyableCandidates = [...risingStocks, ...reboundStocks].join('\n');
@@ -65,11 +66,6 @@ export async function POST() {
       const pnl = ((s.price - h.avg_price) / h.avg_price * 100).toFixed(2);
       return `${s.name}(${s.ticker}): 오늘 ${s.changePercent > 0 ? '+' : ''}${s.changePercent}% | 보유수익률 ${pnl}% | ${h.qty}주`;
     }).filter(Boolean).join('\n');
-
-    const invest40 = Math.floor(portfolio.cash * 0.40);
-    const invest70 = Math.floor(portfolio.cash * 0.70);
-    const deadlineCtx = getDeadlineContext();
-    const returnPct = ((totalAsset - 10000000) / 10000000 * 100).toFixed(2);
 
     const prompt = `당신은 극단적 단타 스캘퍼 AI입니다. 매주 일요일 23:00 실적 평가에서 최고 수익률을 달성해야 합니다.
 
@@ -94,17 +90,16 @@ ${deadlineCtx}
 - 오늘 +0.1% 이상 오른 종목 → 즉시 매수 고려
 - 오늘 -2% 이하 하락 종목 → 반등 노리고 매수 가능
 - 현금 100만원 이상, 보유 4개 미만일 때 매수
-- 현금의 40~70% 투입
-  → 현금 40% = ${invest40.toLocaleString()}원
-  → 현금 70% = ${invest70.toLocaleString()}원
-  → qty = 투입금액 ÷ 주가 (소수점 버림), 각 종목 계산값은 후보 목록에 표시됨
+- 매수 수량(qty)은 완전히 자유입니다. 1주도 되고, 현금 전부를 투입해 전량 매수도 됩니다.
+  → 확신이 있으면 올인, 신중하게 소량만 사도 됩니다. 판단은 당신의 몫입니다.
+  → 단, qty는 현금으로 살 수 있는 최대 수량을 초과할 수 없습니다. (각 종목 후보에 표시됨)
 - 마감 임박 시 가장 모멘텀 강한 1~2종목에 집중 올인
-- ⚠️ qty에 1을 넣는 것은 절대 금지. 반드시 수십~수백 주 단위로 매수할 것
 
 【매도 전략 (초고속)】
 - 보유수익률 +2% → 즉시 익절 전량 (탐욕 금지)
 - 보유수익률 -1.5% → 즉시 손절 전량 (미련 금지)
 - 오늘 -0.5% 이하 보유 종목 → 손절 적극 검토
+- 매도 수량도 자유입니다. 전량 매도 또는 원하는 수량만 매도 가능
 - 마감 당일 23:00 전에는 모든 포지션 정리 고려
 
 【HOLD 조건 (극히 드문 경우)】
@@ -162,8 +157,8 @@ JSON만 답하세요.`;
       return NextResponse.json({ action: 'HOLD', reason: '보유하지 않은 종목 매도 시도' });
     }
 
-    let qty = Math.max(1, Math.floor(decision.qty ?? 1));
-
+    // 수량: 현금/보유 초과 방지만, 최소값 강제 없음
+    let qty = Math.floor(decision.qty ?? 1);
     if (decision.action === 'BUY') {
       const maxQty = Math.floor(portfolio.cash / stock.price);
       qty = Math.min(qty, maxQty);
@@ -174,6 +169,7 @@ JSON만 답하세요.`;
       const holding = holdings.find(h => h.ticker === stock.ticker);
       if (!holding) return NextResponse.json({ action: 'HOLD', reason: '보유 종목 없음' });
       qty = Math.min(qty, holding.qty);
+      if (qty < 1) return NextResponse.json({ action: 'HOLD', reason: '매도 수량 오류' });
     }
 
     await executeTrade({

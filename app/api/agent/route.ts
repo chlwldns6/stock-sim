@@ -25,6 +25,9 @@ export async function POST() {
       return sum + (s ? s.price * h.qty : h.avg_price * h.qty);
     }, 0);
 
+    const deadlineCtx = getDeadlineContext();
+    const returnPct = ((totalAsset - 10000000) / 10000000 * 100).toFixed(2);
+
     // 보유 종목 상세 (수익률 포함)
     const holdingText = holdings.length === 0
       ? '없음'
@@ -35,30 +38,24 @@ export async function POST() {
           return `${h.name}(${h.ticker}) ${h.qty}주 | 평균매수가 ${h.avg_price.toLocaleString()}원 | 현재수익률 ${pnl}% | 평가금액 ${evalAmt}원`;
         }).join('\n');
 
-    // 매수 후보: 등락률 기준 상위 15개 (보유 중 제외)
+    // 매수 후보: 등락률 기준 상위 15개 (보유 중 제외) — 최대 매수 가능 수량 표시
     const buyableCandidates = validStocks
       .filter(s => !holdingTickers.includes(s.ticker))
       .sort((a, b) => b.changePercent - a.changePercent)
       .slice(0, 15)
       .map(s => {
-        const qty30 = Math.floor(investUnit30 / s.price);
-        const qty50 = Math.floor(investUnit50 / s.price);
-        return `${s.name}(${s.ticker}): ${s.price.toLocaleString()}원 ${s.changePercent > 0 ? '+' : ''}${s.changePercent}% | 30%투입=${qty30}주, 50%투입=${qty50}주`;
+        const maxQty = Math.floor(portfolio.cash / s.price);
+        return `${s.name}(${s.ticker}): ${s.price.toLocaleString()}원 ${s.changePercent > 0 ? '+' : ''}${s.changePercent}% | 현금 전액 투입 시 최대 ${maxQty}주`;
       })
       .join('\n');
 
-    // 매도 후보: 보유 종목 전체 (수익률 포함)
+    // 매도 후보: 보유 종목 전체
     const sellCandidates = holdings.length === 0 ? '없음' : holdings.map(h => {
       const s = validStocks.find(st => st.ticker === h.ticker);
       if (!s) return null;
       const pnl = ((s.price - h.avg_price) / h.avg_price * 100).toFixed(2);
       return `${s.name}(${s.ticker}): 오늘 ${s.changePercent > 0 ? '+' : ''}${s.changePercent}% | 보유 수익률 ${pnl}% | ${h.qty}주 보유`;
     }).filter(Boolean).join('\n');
-
-    const investUnit30 = Math.floor(portfolio.cash * 0.30);
-    const investUnit50 = Math.floor(portfolio.cash * 0.50);
-    const deadlineCtx = getDeadlineContext();
-    const returnPct = ((totalAsset - 10000000) / 10000000 * 100).toFixed(2);
 
     const prompt = `당신은 공격적 모멘텀 트레이더 AI입니다. 리스크를 감수하며 주간 실적 평가에서 최고 수익률을 달성해야 합니다.
 
@@ -82,19 +79,17 @@ ${deadlineCtx}
 【매수 규칙】
 - 오늘 +0.5% 이상 오른 종목 → 매수 고려 (모멘텀 추종)
 - 현금 200만원 이상, 보유 3개 미만일 때 매수 가능
-- 매수 수량: 현금의 30~50% 투입 (반드시 수십 주 이상)
-  → 현금 30% = ${investUnit30.toLocaleString()}원
-  → 현금 50% = ${investUnit50.toLocaleString()}원
-  → qty = 투입금액 ÷ 주가 (소수점 버림)
-  → 각 종목별 계산된 수량은 [매수 후보] 목록에 표시됨
+- 매수 수량(qty)은 완전히 자유입니다. 1주도 되고, 전량 매수도 됩니다.
+  → 이익을 극대화할 수 있다고 판단되면 현금 전부를 투입해도 됩니다.
+  → 신중하게 소량만 사도 됩니다. 판단은 당신의 몫입니다.
+  → 단, qty는 현금으로 살 수 있는 최대 수량을 초과할 수 없습니다. (각 종목 후보에 표시됨)
 - 마감이 3일 이내라면 검증된 대형주 위주로 집중
-- ⚠️ qty에 1을 넣는 것은 금지. 반드시 계산된 수량(수십~수백 주)을 넣을 것
 
 【매도 규칙 (우선순위 최고)】
 - 보유 수익률 +3% 이상 → 즉시 익절 (수익 확정)
 - 보유 수익률 -2% 이하 → 즉시 손절 (더 큰 손실 방지)
 - 오늘 -1% 이하인 보유 종목 → 손절 적극 검토
-- 매도는 전량
+- 매도는 전량 또는 원하는 수량 자유롭게
 
 【HOLD 조건 (매우 엄격)】
 - 현금 200만원 미만이고 손절/익절 대상도 없을 때만
@@ -148,26 +143,23 @@ JSON만 답하세요.`;
       return NextResponse.json({ action: 'HOLD', reason: `${decision.ticker} 종목을 찾을 수 없습니다.` });
     }
 
-    // 매도: 보유하지 않은 종목 방어
     if (decision.action === 'SELL' && !holdingTickers.includes(stock.ticker)) {
       return NextResponse.json({ action: 'HOLD', reason: '보유하지 않은 종목 매도 시도 — 관망합니다.' });
     }
 
-    // 매수: 수량 안전 처리 (현금 초과 방지)
-    let qty = Math.max(1, Math.floor(decision.qty ?? 1));
+    // 수량: 현금/보유 초과 방지만, 최소값 강제 없음
+    let qty = Math.floor(decision.qty ?? 1);
     if (decision.action === 'BUY') {
       const maxQty = Math.floor(portfolio.cash / stock.price);
       qty = Math.min(qty, maxQty);
-      if (qty < 1) {
-        return NextResponse.json({ action: 'HOLD', reason: '현금 부족으로 매수 불가' });
-      }
+      if (qty < 1) return NextResponse.json({ action: 'HOLD', reason: '현금 부족으로 매수 불가' });
     }
 
-    // 매도: 보유 수량 초과 방지
     if (decision.action === 'SELL') {
       const holding = holdings.find(h => h.ticker === stock.ticker);
       if (!holding) return NextResponse.json({ action: 'HOLD', reason: '보유 종목 없음' });
       qty = Math.min(qty, holding.qty);
+      if (qty < 1) return NextResponse.json({ action: 'HOLD', reason: '매도 수량 오류' });
     }
 
     await executeTrade({

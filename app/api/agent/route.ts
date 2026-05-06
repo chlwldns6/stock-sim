@@ -5,10 +5,15 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { fetchStockPrices } from '@/lib/yahoo';
 import { getPortfolio, getHoldings, executeTrade } from '@/lib/db';
 import { getDeadlineContext } from '@/lib/deadline';
+import { isKoreanHoliday } from '@/lib/holidays';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function POST() {
+  if (isKoreanHoliday(new Date())) {
+    return NextResponse.json({ action: 'HOLD', reason: '오늘은 공휴일(KRX 휴장일)입니다.' });
+  }
+
   try {
     const [stocks, portfolio, holdings] = await Promise.all([
       fetchStockPrices(),

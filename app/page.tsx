@@ -23,12 +23,33 @@ interface PlayerState { portfolio: Portfolio | null; holdings: Holding[]; }
 interface ChartPoint { date: string; price: number; }
 interface StockQuote { open: number | null; high: number | null; low: number | null; volume: number | null; prevClose: number | null; }
 
-// 한국 주식시장 개장 여부 (평일 09:00~15:30 KST)
+// 한국 공휴일 목록 (KST YYYY-MM-DD)
+const KRX_HOLIDAYS = new Set([
+  '2025-01-01','2025-01-28','2025-01-29','2025-01-30',
+  '2025-03-01','2025-05-05','2025-05-06','2025-05-15',
+  '2025-06-06','2025-08-15','2025-10-03','2025-10-06',
+  '2025-10-07','2025-10-08','2025-10-09','2025-12-25','2025-12-31',
+  '2026-01-01','2026-02-16','2026-02-17','2026-02-18',
+  '2026-03-01','2026-05-05','2026-05-25','2026-06-06',
+  '2026-08-15','2026-09-24','2026-09-25','2026-09-26',
+  '2026-10-03','2026-10-09','2026-12-25','2026-12-31',
+]);
+
+function isKoreanHoliday(date: Date): boolean {
+  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  const y = kst.getUTCFullYear();
+  const m = String(kst.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(kst.getUTCDate()).padStart(2, '0');
+  return KRX_HOLIDAYS.has(`${y}-${m}-${d}`);
+}
+
+// 한국 주식시장 개장 여부 (평일 + 공휴일 제외, 09:00~15:30 KST)
 function isMarketOpen(): boolean {
   const now = new Date();
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
   const day = kst.getUTCDay(); // 0=일, 6=토
   if (day === 0 || day === 6) return false;
+  if (isKoreanHoliday(now)) return false;
   const h = kst.getUTCHours();
   const m = kst.getUTCMinutes();
   const minutes = h * 60 + m;
@@ -42,11 +63,13 @@ function getMarketStatus(): { open: boolean; label: string; nextOpen: string } {
   const h = kst.getUTCHours();
   const m = kst.getUTCMinutes();
   const minutes = h * 60 + m;
-  const open = day !== 0 && day !== 6 && minutes >= 9 * 60 && minutes < 15 * 60 + 30;
+  const holiday = isKoreanHoliday(now);
+  const open = day !== 0 && day !== 6 && !holiday && minutes >= 9 * 60 && minutes < 15 * 60 + 30;
 
   let nextOpen = '';
   if (!open) {
-    if (day === 0) nextOpen = '내일(월) 09:00';
+    if (holiday) nextOpen = '공휴일 휴장';
+    else if (day === 0) nextOpen = '내일(월) 09:00';
     else if (day === 6) nextOpen = '월요일 09:00';
     else if (minutes < 9 * 60) nextOpen = '오늘 09:00';
     else nextOpen = '내일 09:00';

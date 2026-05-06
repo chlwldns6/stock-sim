@@ -11,13 +11,34 @@ jobs:
   run-agents:
     runs-on: ubuntu-latest
     steps:
-      - name: Check market is open (KST 09:00–15:30)
+      - name: Check market is open (KST 09:00–15:30, 공휴일 제외)
         id: check
         run: |
-          # UTC 기준 분 계산
-          TOTAL_MIN=$(date -u +%H%M | awk '{h=substr($0,1,2); m=substr($0,3,2); print h*60+m}')
-          # KST 09:00 = UTC 00:00 (0분), KST 15:30 = UTC 06:30 (390분)
-          if [ "$TOTAL_MIN" -ge 0 ] && [ "$TOTAL_MIN" -le 390 ]; then
+          # KST 날짜 및 시각
+          KST_DATE=$(TZ=Asia/Seoul date +%Y-%m-%d)
+          TOTAL_MIN=$(TZ=Asia/Seoul date +%H%M | awk '{h=substr($0,1,2); m=substr($0,3,2); print h*60+m}')
+
+          # KRX 공휴일 목록
+          HOLIDAYS="
+            2025-01-01 2025-01-28 2025-01-29 2025-01-30
+            2025-03-01 2025-05-05 2025-05-06 2025-05-15
+            2025-06-06 2025-08-15 2025-10-03 2025-10-06
+            2025-10-07 2025-10-08 2025-10-09 2025-12-25 2025-12-31
+            2026-01-01 2026-02-16 2026-02-17 2026-02-18
+            2026-03-01 2026-05-05 2026-05-25 2026-06-06
+            2026-08-15 2026-09-24 2026-09-25 2026-09-26
+            2026-10-03 2026-10-09 2026-12-25 2026-12-31
+          "
+
+          # 공휴일이면 즉시 종료
+          if echo "$HOLIDAYS" | grep -qw "$KST_DATE"; then
+            echo "오늘은 공휴일($KST_DATE) — 실행 건너뜀"
+            echo "open=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # 장 시간 체크 (KST 09:00~15:30)
+          if [ "$TOTAL_MIN" -ge 540 ] && [ "$TOTAL_MIN" -lt 930 ]; then
             echo "open=true" >> $GITHUB_OUTPUT
           else
             echo "open=false" >> $GITHUB_OUTPUT

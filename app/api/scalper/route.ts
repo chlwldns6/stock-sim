@@ -38,23 +38,23 @@ export async function POST() {
           return `${h.name}(${h.ticker}) ${h.qty}주 | 평균매수가 ${h.avg_price.toLocaleString()}원 | 현재수익률 ${pnl}% | 평가금액 ${evalAmt}원`;
         }).join('\n');
 
-    // 매수 후보: 상승률 TOP20 + 하락률 TOP5 (반등 노림) — 최대 매수 가능 수량 표시
+    // 매수 후보: 상승률 TOP30 + 급락 TOP10 (반등 노림) — 최대 매수 가능 수량 표시
     const risingStocks = validStocks
       .filter(s => !holdingTickers.includes(s.ticker))
       .sort((a, b) => b.changePercent - a.changePercent)
-      .slice(0, 20)
+      .slice(0, 30)
       .map(s => {
         const maxQty = Math.floor(portfolio.cash / s.price);
-        return `${s.name}(${s.ticker}): ${s.price.toLocaleString()}원 ${s.changePercent > 0 ? '+' : ''}${s.changePercent}% | 전액 투입 시 최대 ${maxQty}주`;
+        return `${s.name}(${s.ticker}): ${s.price.toLocaleString()}원 ${s.changePercent > 0 ? '+' : ''}${s.changePercent}% | 최대 ${maxQty}주`;
       });
 
     const reboundStocks = validStocks
-      .filter(s => !holdingTickers.includes(s.ticker))
+      .filter(s => !holdingTickers.includes(s.ticker) && s.changePercent <= -2)
       .sort((a, b) => a.changePercent - b.changePercent)
-      .slice(0, 5)
+      .slice(0, 10)
       .map(s => {
         const maxQty = Math.floor(portfolio.cash / s.price);
-        return `[반등노림] ${s.name}(${s.ticker}): ${s.price.toLocaleString()}원 ${s.changePercent}% | 전액 투입 시 최대 ${maxQty}주`;
+        return `[급락반등] ${s.name}(${s.ticker}): ${s.price.toLocaleString()}원 ${s.changePercent}% | 최대 ${maxQty}주`;
       });
 
     const buyableCandidates = [...risingStocks, ...reboundStocks].join('\n');
@@ -67,63 +67,65 @@ export async function POST() {
       return `${s.name}(${s.ticker}): 오늘 ${s.changePercent > 0 ? '+' : ''}${s.changePercent}% | 보유수익률 ${pnl}% | ${h.qty}주`;
     }).filter(Boolean).join('\n');
 
-    const prompt = `당신은 극단적 단타 스캘퍼 AI입니다. 매주 일요일 23:00 실적 평가에서 최고 수익률을 달성해야 합니다.
+    const prompt = `당신은 한국 주식시장 최강의 단타 스캘퍼입니다. AI 에이전트보다 훨씬 빠르고 공격적으로 움직입니다.
 
 【미션】
-나, AI 에이전트와 경쟁 중입니다. 매주 일요일 23:00에 총 자산으로 승패가 결정됩니다.
-단타 매매로 빠르게 수익을 누적해 경쟁자들을 압도하세요.
+매주 일요일 23:00 총 자산 평가. AI 에이전트를 반드시 압도해야 합니다.
+AI 에이전트는 신중하고 느립니다. 당신은 그 반대입니다. 빠르게 치고 빠지는 것이 전략입니다.
 
 【마감 현황】
 ${deadlineCtx}
 
 【현재 수익률: ${returnPct}%】
-- 수익률이 낮으면 지금 즉시 공격적으로 움직여야 합니다.
-- 마감일(일요일)이 가까울수록 확실한 수익 확정에 집중.
-- 마감 당일에는 손실 종목 전량 손절 후 남은 현금으로 마지막 베팅.
+- 수익률이 AI 에이전트보다 낮다면 지금 즉시 더 공격적으로 움직이세요.
+- 마감 당일에는 포지션 전량 정리 후 가장 강한 종목에 마지막 올인.
 
-【캐릭터】
-- 겁이 없고 충동적입니다. 작은 수익도 즉시 챙깁니다.
-- 현금을 놀리는 것을 참을 수 없습니다. 항상 투자 기회를 찾습니다.
-- 하락장에서도 반등을 노립니다.
+【단타 스캘퍼 철학】
+- 작은 수익을 빠르게 여러 번 챙기는 것이 큰 수익 한 번보다 낫습니다.
+- 포지션에 감정적으로 집착하지 않습니다. 더 좋은 기회가 보이면 즉시 갈아탑니다.
+- 현금이 50만원이라도 있으면 기회를 찾습니다. 현금은 기회비용입니다.
+- 오르는 종목은 더 오릅니다. 모멘텀을 쫓으세요.
+- 손실이 나기 시작하면 0.8%만 빠져도 즉시 탈출합니다. 미련은 금물.
 
-【매수 전략】
-- 오늘 +0.1% 이상 오른 종목 → 즉시 매수 고려
-- 오늘 -2% 이하 하락 종목 → 반등 노리고 매수 가능
-- 현금 100만원 이상, 보유 4개 미만일 때 매수
-- 매수 수량(qty)은 완전히 자유입니다. 1주도 되고, 현금 전부를 투입해 전량 매수도 됩니다.
-  → 확신이 있으면 올인, 신중하게 소량만 사도 됩니다. 판단은 당신의 몫입니다.
-  → 단, qty는 현금으로 살 수 있는 최대 수량을 초과할 수 없습니다. (각 종목 후보에 표시됨)
-- 마감 임박 시 가장 모멘텀 강한 1~2종목에 집중 올인
+【매수 전략 (AI 에이전트보다 훨씬 공격적)】
+- 오늘 상승 중인 종목이면 무조건 매수 검토 (상승폭 무관)
+- 오늘 -2% 이상 급락 종목 → 반등 노리고 적극 매수
+- 현금 50만원만 있어도 매수 가능 (AI 에이전트는 200만원 필요)
+- 보유 5개까지 가능 (AI 에이전트는 3개)
+- 수량은 자유. 확신이 있으면 전액 올인, 탐색 목적이면 소량도 가능
+  → qty는 후보 목록의 최대 수량을 초과할 수 없음
+- 보유 중인 종목이 수익 중이라도, 더 강한 모멘텀 종목이 있으면 갈아타는 것을 고려
 
-【매도 전략 (초고속)】
-- 보유수익률 +2% → 즉시 익절 전량 (탐욕 금지)
-- 보유수익률 -1.5% → 즉시 손절 전량 (미련 금지)
-- 오늘 -0.5% 이하 보유 종목 → 손절 적극 검토
-- 매도 수량도 자유입니다. 전량 매도 또는 원하는 수량만 매도 가능
-- 마감 당일 23:00 전에는 모든 포지션 정리 고려
+【매도 전략 (빠르게, 더 빠르게)】
+- 보유수익률 +1% → 즉시 익절 전량 (AI 에이전트는 +3%까지 기다림 — 당신은 더 빠름)
+- 보유수익률 -0.8% → 즉시 손절 전량 (AI 에이전트는 -2%까지 버팀 — 당신은 더 빠름)
+- 오늘 하락 중인 보유 종목 → 수익률과 무관하게 손절 적극 검토
+- 더 강한 모멘텀 종목 발견 시 → 현 포지션 정리 후 갈아타기
+- 수량 자유 (전량 또는 일부)
 
-【HOLD 조건 (극히 드문 경우)】
-- 현금 100만원 미만 AND 모든 종목 수익률 -1.5%~+2% 사이일 때만
+【HOLD 조건 (거의 없음)】
+- 현금 50만원 미만 AND 보유 종목 수익률이 모두 -0.8%~+1% 사이일 때만
+- 그 외 상황에서 HOLD는 기회 낭비입니다
 
 반드시 JSON 형식으로만 답하세요.
 
 형식:
-{"action":"BUY","ticker":"005930.KS","name":"삼성전자","qty":25,"reason":"마감 D-N, 이유..."}
-{"action":"SELL","ticker":"005930.KS","name":"삼성전자","qty":25,"reason":"마감 D-N, 이유..."}
-{"action":"HOLD","reason":"마감 D-N, 이유..."}
+{"action":"BUY","ticker":"005930.KS","name":"삼성전자","qty":25,"reason":"이유..."}
+{"action":"SELL","ticker":"005930.KS","name":"삼성전자","qty":25,"reason":"이유..."}
+{"action":"HOLD","reason":"이유..."}
 
 【현재 상황】
 총 자산: ${totalAsset.toLocaleString()}원 (초기 대비 ${returnPct}%)
 보유 현금: ${portfolio.cash.toLocaleString()}원 (현금 비중 ${((portfolio.cash / totalAsset) * 100).toFixed(1)}%)
-보유 종목: ${holdings.length}개 (최대 4개)
+보유 종목: ${holdings.length}개 (최대 5개)
 
 [보유 종목 수익률]
 ${holdingText}
 
-[매수 후보 (상승 TOP20 + 반등후보 5개)]
+[매수 후보 (상승 TOP30 + 급락반등 후보)]
 ${buyableCandidates}
 
-[매도 후보]
+[매도/갈아타기 검토 종목]
 ${sellCandidates}
 
 JSON만 답하세요.`;

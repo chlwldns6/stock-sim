@@ -333,7 +333,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
 
   const [agentRunning, setAgentRunning] = useState(false);
-  const [scalperRunning, setScalerRunning] = useState(false);
+  const [scalperRunning, setScalperRunning] = useState(false);
   const [lastUpdated, setLastUpdated] = useState('');
   const [marketStatus, setMarketStatus] = useState(getMarketStatus());
 
@@ -404,7 +404,7 @@ export default function Home() {
           const key = bucket(p.recorded_at);
           if (!grouped[key]) {
             grouped[key] = {
-              time: new Date(key).toLocaleTimeString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+              time: new Date(key).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
             };
           }
           if (p.player === 'ai') grouped[key]['AI'] = parseFloat(Number(p.return_pct).toFixed(2));
@@ -503,13 +503,13 @@ export default function Home() {
   }
 
   async function runScalper() {
-    setScalerRunning(true);
+    setScalperRunning(true);
     try {
       const res = await fetch('/api/scalper', { method: 'POST' });
       const data = await res.json();
       await fetchAll();
       alert(data.action === 'HOLD' ? `단타봇 관망\n${data.reason}` : `단타봇 ${data.action === 'BUY' ? '매수' : '매도'}: ${data.name} ${data.qty}주\n${data.reason}`);
-    } catch { alert('단타봇 실행 오류'); } finally { setScalerRunning(false); }
+    } catch { alert('단타봇 실행 오류'); } finally { setScalperRunning(false); }
   }
 
   async function selectTicker(ticker: string) {

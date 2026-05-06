@@ -457,10 +457,24 @@ async function fetchBatch(batch: typeof STOCKS): Promise<Record<string, any>> {
     });
     if (!res.ok) return {};
     const data = await res.json();
-    // 에러 응답 {"spark":{"result":null,...}} 처리
-    if (data?.spark?.result === null) return {};
-    // 정상 응답은 티커를 키로 가진 객체
-    if (data?.spark) return {};
+
+    // spark 래핑 형식: {"spark":{"result":[{"symbol":...,"response":[...]}]}}
+    if (data?.spark) {
+      if (!data.spark.result) return {};
+      const out: Record<string, any> = {};
+      for (const item of data.spark.result) {
+        const ticker = item.symbol;
+        const resp = item.response?.[0];
+        if (!resp) continue;
+        out[ticker] = {
+          chartPreviousClose: resp.meta?.chartPreviousClose ?? 0,
+          close: resp.indicators?.quote?.[0]?.close ?? [],
+        };
+      }
+      return out;
+    }
+
+    // 티커 키 형식: {"005930.KS":{close:[...], chartPreviousClose:...}}
     return data;
   } catch {
     return {};

@@ -1,0 +1,178 @@
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export interface Portfolio {
+  player: string;
+  cash: number;
+}
+
+export interface Holding {
+  player: string;
+  ticker: string;
+  name: string;
+  qty: number;
+  avg_price: number;
+}
+
+export interface Trade {
+  id: string;
+  player: string;
+  action: string;
+  ticker: string;
+  name: string;
+  qty: number;
+  price: number;
+  avg_price?: number;
+  reason: string | null;
+  realized_pnl?: number;
+  executed_at: string;
+}
+
+export interface PerfPoint {
+  player: string;
+  total_value: number;
+  return_pct: number;
+  recorded_at: string;
+}
+
+export async function getPortfolio(player: string): Promise<Portfolio | null> {
+  const { data } = await supabase
+    .from('portfolios').select('*').eq('player', player).single();
+  return data;
+}
+
+export async function getHoldings(player: string): Promise<Holding[]> {
+  const { data } = await supabase
+    .from('holdings').select('*').eq('player', player);
+  return data ?? [];
+}
+
+export async function getRecentTrades(limit = 50): Promise<Trade[]> {
+  const { data } = await supabase
+    .from('trades').select('*').order('executed_at', { ascending: false }).limit(limit);
+  return data ?? [];
+}
+
+export async function getTradesByPlayer(player: string, limit = 50): Promise<Trade[]> {
+  const { data } = await supabase
+    .from('trades').select('*').eq('player', player).order('executed_at', { ascending: false }).limit(limit);
+  return data ?? [];
+}
+
+export async function getPerfHistory(): Promise<PerfPoint[]> {
+  const { data } = await supabase
+    .from('perf_history')
+    .select('*')
+    .order('recorded_at', { ascending: true })
+    .limit(200);
+  return data ?? [];
+}
+
+export async function savePerfPoint(player: string, totalValue: number) {
+  const fourMinutesAgo = new Date(Date.now() - 4 * 60 * 1000).toISOString();
+  const { data: recent } = await supabase
+    .from('perf_history')
+    .select('id')
+    .eq('player', player)
+    .gte('recorded_at', fourMinutesAgo)
+    .limit(1);
+  if (recent && recent.length > 0) return;
+
+  const returnPct = ((totalValue - 10000000) / 10000000) * 100;
+  const { error } = await supabase.from('perf_history').insert({
+    player,
+    total_value: totalValue,
+    return_pct: returnPct,
+  });
+  if (error) console.error('[perf insert error]', error);
+}
+
+export async function resetGame() {
+  await supabase.from('trades').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  await supabase.from('holdings').delete().neq('player', '');
+  await supabase.from('perf_history').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  await supabase.from('portfolios').update({ cash: 10000000 }).eq('player', 'ai');
+  await supabase.from('portfolios').update({ cash: 10000000 }).eq('player', 'user');
+  // scalper 포트폴리오가 없으면 생성, 있으면 초기화
+  const { data: existing } = await supabase.from('portfolios').select('player').eq('player', 'scalper').single();
+  if (existing) {
+    await supabase.from('portfolios').update({ cash: 10000000 }).eq('player', 'scalper');
+  } else {
+    await supabase.from('portfolios').insert({ player: 'scalper', cash: 10000000 });
+  }
+}
+
+export async function executeTrade(params: {
+  player: string;
+  action: 'BUY' | 'SELL';
+  ticker: string;
+  name: string;
+  qty: number;
+  price: number;
+  reason?: string;
+}) {
+  const portfolio = await getPortfolio(params.player);
+  if (!portfolio) throw new Error('포트폴리오를 찾을 수 없습니다.');
+
+  const totalCost = params.price * params.qty;
+
+  if (params.action === 'BUY') {
+    if (portfolio.cash < totalCost) throw new Error('현금이 부족합니다.');
+
+    await supabase.from('portfolios')
+      .update({ cash: portfolio.cash - totalCost }).eq('player', params.player);
+
+    const holdings = await getHoldings(params.player);
+    const existing = holdings.find(h => h.ticker === params.ticker);
+
+    if (existing) {
+      const newQty = existing.qty + params.qty;
+      const newAvg = Math.round(
+        (existing.avg_price * existing.qty + params.price * params.qty) / newQty
+      );
+      await supabase.from('holdings')
+        .update({ qty: newQty, avg_price: newAvg })
+        .eq('player', params.player).eq('ticker', params.ticker);
+    } else {
+      await supabase.from('holdings').insert({
+        player: params.player, ticker: params.ticker, name: params.name,
+        qty: params.qty, avg_price: params.price,
+      });
+    }
+  } else {
+    const holdings = await getHoldings(params.player);
+    const existing = holdings.find(h => h.ticker === params.ticker);
+    if (!existing || existing.qty < params.qty) throw new Error('보유 수량이 부족합니다.');
+
+    await supabase.from('portfolios')
+      .update({ cash: portfolio.cash + totalCost }).eq('player', params.player);
+
+    const newQty = existing.qty - params.qty;
+    if (newQty === 0) {
+      await supabase.from('holdings')
+        .delete().eq('player', params.player).eq('ticker', params.ticker);
+    } else {
+      await supabase.from('holdings')
+        .update({ qty: newQty }).eq('player', params.player).eq('ticker', params.ticker);
+    }
+
+    const realizedPnl = Math.round((params.price - existing.avg_price) * params.qty);
+    await supabase.from('trades').insert({
+      player: params.player, action: params.action, ticker: params.ticker,
+      name: params.name, qty: params.qty, price: params.price,
+      avg_price: existing.avg_price,
+      reason: params.reason ?? null, realized_pnl: realizedPnl,
+    });
+    return;
+  }
+
+  await supabase.from('trades').insert({
+    player: params.player, action: params.action, ticker: params.ticker,
+    name: params.name, qty: params.qty, price: params.price,
+    reason: params.reason ?? null,
+  });
+}

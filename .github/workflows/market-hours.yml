@@ -1,0 +1,38 @@
+name: Market Hours Scheduler
+
+on:
+  schedule:
+    # 평일 09:00~15:30 KST = UTC 00:00~06:30
+    # 5분마다 실행
+    - cron: '*/5 0-6 * * 1-5'
+  workflow_dispatch: # 수동 실행 버튼
+
+jobs:
+  run-agents:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check market is open (KST 09:00–15:30)
+        id: check
+        run: |
+          # UTC 기준 분 계산
+          TOTAL_MIN=$(date -u +%H%M | awk '{h=substr($0,1,2); m=substr($0,3,2); print h*60+m}')
+          # KST 09:00 = UTC 00:00 (0분), KST 15:30 = UTC 06:30 (390분)
+          if [ "$TOTAL_MIN" -ge 0 ] && [ "$TOTAL_MIN" -le 390 ]; then
+            echo "open=true" >> $GITHUB_OUTPUT
+          else
+            echo "open=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run AI Agent
+        if: steps.check.outputs.open == 'true'
+        run: |
+          curl -s -X POST "${{ secrets.APP_URL }}/api/agent" \
+            -H "Content-Type: application/json" \
+            --max-time 65 || echo "agent timeout/error (ignored)"
+
+      - name: Run Scalper
+        if: steps.check.outputs.open == 'true'
+        run: |
+          curl -s -X POST "${{ secrets.APP_URL }}/api/scalper" \
+            -H "Content-Type: application/json" \
+            --max-time 65 || echo "scalper timeout/error (ignored)"

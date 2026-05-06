@@ -89,6 +89,10 @@ export async function savePerfPoint(player: string, totalValue: number) {
     return_pct: returnPct,
   });
   if (error) console.error('[perf insert error]', error);
+
+  // 7일 이상 된 데이터 자동 삭제
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  await supabase.from('perf_history').delete().lt('recorded_at', sevenDaysAgo);
 }
 
 export async function resetGame() {

@@ -8,6 +8,7 @@ const supabase = createClient(
 export interface Portfolio {
   player: string;
   cash: number;
+  initial_capital: number;
 }
 
 export interface Holding {
@@ -82,7 +83,10 @@ export async function savePerfPoint(player: string, totalValue: number) {
     .limit(1);
   if (recent && recent.length > 0) return;
 
-  const returnPct = ((totalValue - 10000000) / 10000000) * 100;
+  const { data: portfolio } = await supabase
+    .from('portfolios').select('initial_capital').eq('player', player).single();
+  const initialCapital = portfolio?.initial_capital ?? 10000000;
+  const returnPct = ((totalValue - initialCapital) / initialCapital) * 100;
   const { error } = await supabase.from('perf_history').insert({
     player,
     total_value: totalValue,
@@ -95,18 +99,17 @@ export async function savePerfPoint(player: string, totalValue: number) {
   await supabase.from('perf_history').delete().lt('recorded_at', sevenDaysAgo);
 }
 
-export async function resetGame() {
+export async function resetGame(initialCapital: number = 10000000) {
   await supabase.from('trades').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   await supabase.from('holdings').delete().neq('player', '');
   await supabase.from('perf_history').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-  await supabase.from('portfolios').update({ cash: 10000000 }).eq('player', 'ai');
-  await supabase.from('portfolios').update({ cash: 10000000 }).eq('player', 'user');
-  // scalper 포트폴리오가 없으면 생성, 있으면 초기화
+  await supabase.from('portfolios').update({ cash: initialCapital, initial_capital: initialCapital }).eq('player', 'ai');
+  await supabase.from('portfolios').update({ cash: initialCapital, initial_capital: initialCapital }).eq('player', 'user');
   const { data: existing } = await supabase.from('portfolios').select('player').eq('player', 'scalper').single();
   if (existing) {
-    await supabase.from('portfolios').update({ cash: 10000000 }).eq('player', 'scalper');
+    await supabase.from('portfolios').update({ cash: initialCapital, initial_capital: initialCapital }).eq('player', 'scalper');
   } else {
-    await supabase.from('portfolios').insert({ player: 'scalper', cash: 10000000 });
+    await supabase.from('portfolios').insert({ player: 'scalper', cash: initialCapital, initial_capital: initialCapital });
   }
 }
 

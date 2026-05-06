@@ -38,8 +38,13 @@ export async function POST() {
       return sum + (s ? s.price * h.qty : h.avg_price * h.qty);
     }, 0);
 
+    const initialCapital = portfolio.initial_capital ?? 10000000;
     const deadlineCtx = getDeadlineContext();
-    const returnPct = ((totalAsset - 10000000) / 10000000 * 100).toFixed(2);
+    const returnPct = ((totalAsset - initialCapital) / initialCapital * 100).toFixed(2);
+    // 매수 최소 현금: 초기자본의 5% / AI 에이전트 기준: 20%
+    const minCash = Math.round(initialCapital * 0.05);
+    const minCashFmt = minCash >= 10000 ? `${(minCash / 10000).toLocaleString()}만원` : `${minCash.toLocaleString()}원`;
+    const aiMinCashFmt = (() => { const v = Math.round(initialCapital * 0.2); return v >= 10000 ? `${(v / 10000).toLocaleString()}만원` : `${v.toLocaleString()}원`; })();
 
     // 보유 종목 상세
     const holdingText = holdings.length === 0
@@ -103,7 +108,7 @@ ${deadlineCtx}
 【매수 전략 (AI 에이전트보다 훨씬 공격적)】
 - 오늘 상승 중인 종목이면 무조건 매수 검토 (상승폭 무관)
 - 오늘 -2% 이상 급락 종목 → 반등 노리고 적극 매수
-- 현금 50만원만 있어도 매수 가능 (AI 에이전트는 200만원 필요)
+- 현금 ${minCashFmt}만 있어도 매수 가능 (AI 에이전트는 ${aiMinCashFmt} 필요)
 - 보유 5개까지 가능 (AI 에이전트는 3개)
 - 수량은 자유. 확신이 있으면 전액 올인, 탐색 목적이면 소량도 가능
   → qty는 후보 목록의 최대 수량을 초과할 수 없음
@@ -117,7 +122,7 @@ ${deadlineCtx}
 - 수량 자유 (전량 또는 일부)
 
 【HOLD 조건 (거의 없음)】
-- 현금 50만원 미만 AND 보유 종목 수익률이 모두 -0.8%~+1% 사이일 때만
+- 현금 ${minCashFmt} 미만 AND 보유 종목 수익률이 모두 -0.8%~+1% 사이일 때만
 - 그 외 상황에서 HOLD는 기회 낭비입니다
 
 반드시 JSON 형식으로만 답하세요.
@@ -129,6 +134,7 @@ ${deadlineCtx}
 
 【현재 상황】
 총 자산: ${totalAsset.toLocaleString()}원 (초기 대비 ${returnPct}%)
+초기 자본: ${initialCapital.toLocaleString()}원
 보유 현금: ${portfolio.cash.toLocaleString()}원 (현금 비중 ${((portfolio.cash / totalAsset) * 100).toFixed(1)}%)
 보유 종목: ${holdings.length}개 (최대 5개)
 

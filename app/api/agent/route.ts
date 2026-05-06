@@ -38,8 +38,12 @@ export async function POST() {
       return sum + (s ? s.price * h.qty : h.avg_price * h.qty);
     }, 0);
 
+    const initialCapital = portfolio.initial_capital ?? 10000000;
     const deadlineCtx = getDeadlineContext();
-    const returnPct = ((totalAsset - 10000000) / 10000000 * 100).toFixed(2);
+    const returnPct = ((totalAsset - initialCapital) / initialCapital * 100).toFixed(2);
+    // 매수 최소 현금: 초기자본의 20%
+    const minCash = Math.round(initialCapital * 0.2);
+    const minCashFmt = minCash >= 10000 ? `${(minCash / 10000).toLocaleString()}만원` : `${minCash.toLocaleString()}원`;
 
     // 보유 종목 상세 (수익률 포함)
     const holdingText = holdings.length === 0
@@ -91,7 +95,7 @@ ${deadlineCtx}
 
 【매수 규칙】
 - 오늘 +0.5% 이상 오른 종목 → 매수 고려 (모멘텀 추종)
-- 현금 200만원 이상, 보유 3개 미만일 때 매수 가능
+- 현금 ${minCashFmt} 이상, 보유 3개 미만일 때 매수 가능
 - 매수 수량(qty)은 완전히 자유입니다. 1주도 되고, 전량 매수도 됩니다.
   → 이익을 극대화할 수 있다고 판단되면 현금 전부를 투입해도 됩니다.
   → 신중하게 소량만 사도 됩니다. 판단은 당신의 몫입니다.
@@ -105,7 +109,7 @@ ${deadlineCtx}
 - 매도는 전량 또는 원하는 수량 자유롭게
 
 【HOLD 조건 (매우 엄격)】
-- 현금 200만원 미만이고 손절/익절 대상도 없을 때만
+- 현금 ${minCashFmt} 미만이고 손절/익절 대상도 없을 때만
 - 그 외에는 반드시 행동
 
 반드시 JSON 형식으로만 답하세요.
@@ -117,6 +121,7 @@ ${deadlineCtx}
 
 【현재 상황】
 총 자산: ${totalAsset.toLocaleString()}원 (초기 대비 ${returnPct}%)
+초기 자본: ${initialCapital.toLocaleString()}원
 보유 현금: ${portfolio.cash.toLocaleString()}원 (현금 비중 ${((portfolio.cash / totalAsset) * 100).toFixed(1)}%)
 보유 종목: ${holdings.length}개 (최대 3개)
 

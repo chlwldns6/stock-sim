@@ -13,7 +13,7 @@ interface Stock {
 const SECTORS = ['전체','반도체','IT','자동차','바이오','에너지','금융','소비재','통신','건설','철강','방산','중견','저가주'];
 
 interface Holding { ticker: string; name: string; qty: number; avg_price: number; }
-interface Portfolio { cash: number; }
+interface Portfolio { cash: number; initial_capital: number; }
 interface Trade {
   id: string; player: string; action: string; ticker: string;
   name: string; qty: number; price: number; avg_price?: number;
@@ -84,7 +84,7 @@ function calcTotalValue(portfolio: Portfolio | null, holdings: Holding[], stocks
     return sum + (s ? s.price * h.qty : h.avg_price * h.qty);
   }, 0);
 }
-function calcReturnPct(total: number) { return ((total - 10000000) / 10000000) * 100; }
+function calcReturnPct(total: number, initCap: number) { return ((total - initCap) / initCap) * 100; }
 function fmtPrice(n: number) { return n.toLocaleString('ko-KR') + '원'; }
 function fmtPct(n: number) { return `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`; }
 
@@ -355,6 +355,9 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [pendingCapital, setPendingCapital] = useState(10000000);
+
   const [agentRunning, setAgentRunning] = useState(false);
   const [scalperRunning, setScalperRunning] = useState(false);
   const [lastUpdated, setLastUpdated] = useState('');
@@ -548,12 +551,12 @@ export default function Home() {
     setQuoteLoading(false);
   }
 
-  async function resetGame() {
-    if (!confirm('정말 초기화할까요? 모든 데이터가 삭제되고 각 플레이어에 1,000만원이 지급됩니다.')) return;
+  async function resetGame(initialCapital: number) {
     try {
-      await fetch('/api/reset', { method: 'POST' });
-      setChartData([]); await fetchAll();
-      alert('초기화 완료');
+      await fetch('/api/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initialCapital }) });
+      setChartData([]);
+      setShowResetModal(false);
+      await fetchAll();
     } catch { alert('초기화 오류'); }
   }
 
@@ -597,9 +600,9 @@ export default function Home() {
   const aiTotal = calcTotalValue(ai.portfolio, ai.holdings, stocks);
   const userTotal = calcTotalValue(user.portfolio, user.holdings, stocks);
   const scalperTotal = calcTotalValue(scalper.portfolio, scalper.holdings, stocks);
-  const aiReturn = calcReturnPct(aiTotal);
-  const userReturn = calcReturnPct(userTotal);
-  const scalperReturn = calcReturnPct(scalperTotal);
+  const aiReturn = calcReturnPct(aiTotal, ai.portfolio?.initial_capital ?? 10000000);
+  const userReturn = calcReturnPct(userTotal, user.portfolio?.initial_capital ?? 10000000);
+  const scalperReturn = calcReturnPct(scalperTotal, scalper.portfolio?.initial_capital ?? 10000000);
 
   const rankings = [
     { label: '나', icon: '🙋', value: userReturn, color: '#8b5cf6', total: userTotal },
@@ -630,8 +633,36 @@ export default function Home() {
     border: `1px solid ${on ? color : '#2d3148'}`, borderRadius: '6px', cursor: 'pointer',
   });
 
+  const CAPITAL_OPTIONS = [
+    { label: '100만원', value: 1000000 },
+    { label: '300만원', value: 3000000 },
+    { label: '500만원', value: 5000000 },
+    { label: '1000만원', value: 10000000 },
+  ];
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f1117', color: '#e2e8f0', fontFamily: 'Arial, sans-serif' }}>
+
+      {/* 초기화 모달 */}
+      {showResetModal && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ backgroundColor: '#1a1d27', border: '1px solid #2d3148', borderRadius: '12px', padding: '28px', width: '340px' }}>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '6px' }}>게임 초기화</div>
+            <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '20px' }}>시작 금액을 선택하세요. 모든 거래·보유 내역이 초기화됩니다.</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '20px' }}>
+              {CAPITAL_OPTIONS.map(({ label, value }) => (
+                <button key={value} onClick={() => setPendingCapital(value)} style={{ padding: '14px', backgroundColor: pendingCapital === value ? '#8b5cf6' : '#0f1117', border: `2px solid ${pendingCapital === value ? '#8b5cf6' : '#2d3148'}`, borderRadius: '8px', color: pendingCapital === value ? '#fff' : '#94a3b8', cursor: 'pointer', fontSize: '15px', fontWeight: 'bold', transition: 'all 0.15s' }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => setShowResetModal(false)} style={{ flex: 1, padding: '10px', backgroundColor: '#0f1117', color: '#64748b', border: '1px solid #2d3148', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>취소</button>
+              <button onClick={() => resetGame(pendingCapital)} style={{ flex: 1, padding: '10px', backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>초기화</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 헤더 */}
       <div style={{ backgroundColor: '#1a1d27', borderBottom: '1px solid #2d3148', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -647,7 +678,7 @@ export default function Home() {
             {marketStatus.open ? '🟢 장중' : `🔴 장외${marketStatus.nextOpen ? ` · ${marketStatus.nextOpen} 개장` : ''}`}
           </span>
           <span style={{ fontSize: '11px', color: '#475569', padding: '2px 8px', border: '1px solid #2d3148', borderRadius: '4px' }}>가상 시뮬레이션</span>
-          <button onClick={resetGame} style={{ padding: '4px 14px', backgroundColor: '#1a1d27', color: '#ef4444', border: '1px solid #ef444466', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>🔄 초기화</button>
+          <button onClick={() => { setPendingCapital(10000000); setShowResetModal(true); }} style={{ padding: '4px 14px', backgroundColor: '#1a1d27', color: '#ef4444', border: '1px solid #ef444466', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>🔄 초기화</button>
         </div>
       </div>
 

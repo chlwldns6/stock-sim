@@ -791,16 +791,16 @@ async function fetchBatch(batch: typeof STOCKS): Promise<Record<string, any>> {
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
-// 60초 캐시 — Yahoo 과호출 방지 + 타임아웃 리스크 감소
+// 120초 캐시 — 단타봇 2분 주기에 맞춰 TTL 연장, Yahoo 과호출 방지
 let stockCache: { data: StockPrice[]; ts: number } | null = null;
-const CACHE_TTL_MS = 60 * 1000;
+const CACHE_TTL_MS = 120 * 1000;
 
 export async function fetchStockPrices(): Promise<StockPrice[]> {
   if (stockCache && Date.now() - stockCache.ts < CACHE_TTL_MS) {
     return stockCache.data;
   }
 
-  const BATCH_SIZE = 10;
+  const BATCH_SIZE = 25;
   const batches: typeof STOCKS[] = [];
   for (let i = 0; i < STOCKS.length; i += BATCH_SIZE) {
     batches.push(STOCKS.slice(i, i + BATCH_SIZE));
@@ -808,7 +808,7 @@ export async function fetchStockPrices(): Promise<StockPrice[]> {
 
   const results: Record<string, any>[] = [];
   for (let i = 0; i < batches.length; i++) {
-    if (i > 0) await sleep(300);
+    if (i > 0) await sleep(150);
     const result = await fetchBatch(batches[i]);
     results.push(result);
   }

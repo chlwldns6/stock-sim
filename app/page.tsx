@@ -1074,38 +1074,54 @@ export default function Home() {
 
               {/* ── AI 포트폴리오 ── */}
               {activeTab === 'ai_portfolio' && (
-                ai.holdings.length === 0 ? (
-                  <div style={{ padding: '60px 20px', textAlign: 'center', color: '#475569' }}>
-                    <div style={{ fontSize: '40px', marginBottom: '12px' }}>🤖</div>
-                    <div style={{ marginBottom: '12px' }}>AI가 아직 보유 종목이 없습니다</div>
-                    <button onClick={runAgent} disabled={agentRunning} style={{ padding: '8px 20px', backgroundColor: '#f59e0b', color: '#000', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>{agentRunning ? '판단 중...' : 'AI 판단 실행'}</button>
-                  </div>
-                ) : (
-                  <>
-                    <PortfolioSummary holdings={ai.holdings} stocks={stocks} accentColor="#f59e0b" trades={allTrades.filter(t => t.player === 'ai')} />
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px', maxHeight: '600px', overflowY: 'auto' }}>
-                      {ai.holdings.map(h => <BotHoldingCard key={h.ticker} holding={h} stock={stocks.find(s => s.ticker === h.ticker)} accentColor="#f59e0b" badge="🤖 AI" />)}
+                <>
+                  {ai.holdings.length === 0 ? (
+                    <div style={{ padding: '40px 20px', textAlign: 'center', color: '#475569' }}>
+                      <div style={{ fontSize: '40px', marginBottom: '12px' }}>🤖</div>
+                      <div style={{ marginBottom: '12px' }}>AI가 현재 보유 종목이 없습니다</div>
+                      <button onClick={runAgent} disabled={agentRunning} style={{ padding: '8px 20px', backgroundColor: '#f59e0b', color: '#000', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>{agentRunning ? '판단 중...' : 'AI 판단 실행'}</button>
                     </div>
-                  </>
-                )
+                  ) : (
+                    <>
+                      <PortfolioSummary holdings={ai.holdings} stocks={stocks} accentColor="#f59e0b" trades={allTrades.filter(t => t.player === 'ai')} />
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+                        {ai.holdings.map(h => <BotHoldingCard key={h.ticker} holding={h} stock={stocks.find(s => s.ticker === h.ticker)} accentColor="#f59e0b" badge="🤖 AI" />)}
+                      </div>
+                    </>
+                  )}
+                  <div style={{ borderTop: '1px solid #2d3148', paddingTop: '16px' }}>
+                    <div style={{ fontSize: '13px', color: '#f59e0b', fontWeight: 'bold', marginBottom: '10px' }}>🤖 AI 거래 내역</div>
+                    <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                      <TradeList trades={allTrades.filter(t => t.player === 'ai')} />
+                    </div>
+                  </div>
+                </>
               )}
 
               {/* ── 단타봇 포트폴리오 ── */}
               {activeTab === 'scalper_portfolio' && (
-                scalper.holdings.length === 0 ? (
-                  <div style={{ padding: '60px 20px', textAlign: 'center', color: '#475569' }}>
-                    <div style={{ fontSize: '40px', marginBottom: '12px' }}>⚡</div>
-                    <div style={{ marginBottom: '12px' }}>단타봇이 아직 보유 종목이 없습니다</div>
-                    <button onClick={runScalper} disabled={scalperRunning} style={{ padding: '8px 20px', backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>{scalperRunning ? '매매 중...' : '단타봇 실행'}</button>
-                  </div>
-                ) : (
-                  <>
-                    <PortfolioSummary holdings={scalper.holdings} stocks={stocks} accentColor="#ef4444" trades={allTrades.filter(t => t.player === 'scalper')} />
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px', maxHeight: '600px', overflowY: 'auto' }}>
-                      {scalper.holdings.map(h => <BotHoldingCard key={h.ticker} holding={h} stock={stocks.find(s => s.ticker === h.ticker)} accentColor="#ef4444" badge="⚡ 단타봇" />)}
+                <>
+                  {scalper.holdings.length === 0 ? (
+                    <div style={{ padding: '40px 20px', textAlign: 'center', color: '#475569' }}>
+                      <div style={{ fontSize: '40px', marginBottom: '12px' }}>⚡</div>
+                      <div style={{ marginBottom: '12px' }}>단타봇이 현재 보유 종목이 없습니다</div>
+                      <button onClick={runScalper} disabled={scalperRunning} style={{ padding: '8px 20px', backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>{scalperRunning ? '매매 중...' : '단타봇 실행'}</button>
                     </div>
-                  </>
-                )
+                  ) : (
+                    <>
+                      <PortfolioSummary holdings={scalper.holdings} stocks={stocks} accentColor="#ef4444" trades={allTrades.filter(t => t.player === 'scalper')} />
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+                        {scalper.holdings.map(h => <BotHoldingCard key={h.ticker} holding={h} stock={stocks.find(s => s.ticker === h.ticker)} accentColor="#ef4444" badge="⚡ 단타봇" />)}
+                      </div>
+                    </>
+                  )}
+                  <div style={{ borderTop: '1px solid #2d3148', paddingTop: '16px' }}>
+                    <div style={{ fontSize: '13px', color: '#ef4444', fontWeight: 'bold', marginBottom: '10px' }}>⚡ 단타봇 거래 내역</div>
+                    <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                      <TradeList trades={allTrades.filter(t => t.player === 'scalper')} />
+                    </div>
+                  </div>
+                </>
               )}
 
               {/* ── 거래 기록 ── */}

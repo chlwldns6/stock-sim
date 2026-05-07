@@ -1056,20 +1056,28 @@ export default function Home() {
 
               {/* ── 내 포트폴리오 ── */}
               {activeTab === 'portfolio' && (
-                user.holdings.length === 0 ? (
-                  <div style={{ padding: '60px 20px', textAlign: 'center', color: '#475569' }}>
-                    <div style={{ fontSize: '40px', marginBottom: '12px' }}>📭</div>
-                    <div style={{ marginBottom: '8px' }}>보유 종목이 없습니다</div>
-                    <button onClick={() => setActiveTab('market')} style={{ padding: '8px 20px', backgroundColor: '#8b5cf6', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>종목 탐색하기</button>
-                  </div>
-                ) : (
-                  <>
-                    <PortfolioSummary holdings={user.holdings} stocks={stocks} accentColor="#8b5cf6" trades={allTrades.filter(t => t.player === 'user')} />
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px', maxHeight: '600px', overflowY: 'auto' }}>
-                      {user.holdings.map(h => <HoldingCard key={h.ticker} holding={h} stock={stocks.find(s => s.ticker === h.ticker)} onBuy={cardBuy} onSell={cardSell} onSellAll={cardSellAll} />)}
+                <>
+                  {user.holdings.length === 0 ? (
+                    <div style={{ padding: '40px 20px', textAlign: 'center', color: '#475569' }}>
+                      <div style={{ fontSize: '40px', marginBottom: '12px' }}>📭</div>
+                      <div style={{ marginBottom: '8px' }}>보유 종목이 없습니다</div>
+                      <button onClick={() => setActiveTab('market')} style={{ padding: '8px 20px', backgroundColor: '#8b5cf6', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>종목 탐색하기</button>
                     </div>
-                  </>
-                )
+                  ) : (
+                    <>
+                      <PortfolioSummary holdings={user.holdings} stocks={stocks} accentColor="#8b5cf6" trades={allTrades.filter(t => t.player === 'user')} />
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+                        {user.holdings.map(h => <HoldingCard key={h.ticker} holding={h} stock={stocks.find(s => s.ticker === h.ticker)} onBuy={cardBuy} onSell={cardSell} onSellAll={cardSellAll} />)}
+                      </div>
+                    </>
+                  )}
+                  <div style={{ borderTop: '1px solid #2d3148', paddingTop: '16px' }}>
+                    <div style={{ fontSize: '13px', color: '#8b5cf6', fontWeight: 'bold', marginBottom: '10px' }}>🙋 내 거래 내역</div>
+                    <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                      <TradeList trades={allTrades.filter(t => t.player === 'user')} />
+                    </div>
+                  </div>
+                </>
               )}
 
               {/* ── AI 포트폴리오 ── */}

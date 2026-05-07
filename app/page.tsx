@@ -464,7 +464,7 @@ export default function Home() {
       autoTimerAi.current = setInterval(async () => {
         if (!autoRunAiRef.current || !isMarketOpen()) return;
         try { await fetch('/api/agent', { method: 'POST' }); await fetchAll(); } catch {}
-      }, 5 * 60 * 1000);
+      }, 15 * 60 * 1000);
     }
     return () => { if (autoTimerAi.current) clearInterval(autoTimerAi.current); };
   }, [autoRunAi, fetchAll]);
@@ -820,7 +820,7 @@ export default function Home() {
             </button>
             <div onClick={() => setAutoRunAi(v => !v)} style={TOGGLE(autoRunAi, '#f59e0b')}>
               <span style={{ fontSize: '12px', color: autoRunAi ? '#f59e0b' : '#64748b' }}>
-                5분마다 자동 실행{autoRunAi && !marketStatus.open ? <span style={{ color: '#475569' }}> (장외 대기)</span> : ''}
+                15분마다 자동 실행{autoRunAi && !marketStatus.open ? <span style={{ color: '#475569' }}> (장외 대기)</span> : ''}
               </span>
               <div style={{ width: '32px', height: '18px', backgroundColor: autoRunAi ? '#f59e0b' : '#374151', borderRadius: '9px', position: 'relative' }}>
                 <div style={{ position: 'absolute', top: '2px', left: autoRunAi ? '16px' : '2px', width: '14px', height: '14px', backgroundColor: '#fff', borderRadius: '50%', transition: 'left 0.2s' }} />

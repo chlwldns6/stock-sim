@@ -29,13 +29,13 @@ async function startAgents() {
     .then(r => console.log(`[scheduler] 단타봇: ${JSON.stringify(r)}`))
     .catch(e => console.error('[scheduler] 단타봇 오류:', e));
 
-  // AI 에이전트: 5분마다
+  // AI 에이전트: 15분마다
   aiTimer = setInterval(() => {
     if (!isMarketOpen()) return;
     runAgent()
       .then(r => console.log(`[scheduler] AI에이전트: ${JSON.stringify(r)}`))
       .catch(e => console.error('[scheduler] AI에이전트 오류:', e));
-  }, 5 * 60 * 1000);
+  }, 15 * 60 * 1000);
 
   // 단타봇: 2분마다
   scalperTimer = setInterval(() => {

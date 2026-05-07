@@ -441,6 +441,94 @@ export const STOCKS = [
   { ticker: '049070.KQ', name: '인탑스',               sector: '전자' },
   { ticker: '039830.KQ', name: '오로라',               sector: '기타' },
   { ticker: '319400.KQ', name: '현대무벡스',           sector: '기타' },
+
+  // ===== 추가 KOSPI =====
+
+  // 로봇
+  { ticker: '454910.KS', name: '두산로보틱스',          sector: '로봇' },
+  { ticker: '277810.KS', name: '레인보우로보틱스',       sector: '로봇' },
+  { ticker: '090355.KS', name: '노루페인트',            sector: '소재' },
+
+  // 조선 추가
+  { ticker: '267250.KS', name: 'HD현대',               sector: '조선' },
+  { ticker: '443060.KS', name: 'HD현대마린솔루션',       sector: '조선' },
+  { ticker: '329180.KS', name: '한화오션',              sector: '조선' },
+
+  // 2차전지 추가
+  { ticker: '361610.KS', name: 'SK아이이테크놀로지',     sector: '2차전지' },
+  { ticker: '020150.KS', name: '롯데에너지머티리얼즈',   sector: '2차전지' },
+
+  // 반도체 추가
+  { ticker: '007660.KS', name: '이수페타시스',           sector: '반도체' },
+  { ticker: '018470.KS', name: '조일알미늄',            sector: '반도체' },
+
+  // IT 추가
+  { ticker: '022100.KS', name: '포스코DX',              sector: 'IT' },
+  { ticker: '248070.KS', name: '솔루엠',                sector: 'IT' },
+
+  // 소비재 추가
+  { ticker: '003230.KS', name: '삼양식품',              sector: '소비재' },
+  { ticker: '280360.KS', name: '롯데웰푸드',             sector: '소비재' },
+  { ticker: '005180.KS', name: '빙그레',                sector: '소비재' },
+  { ticker: '192820.KS', name: '코스맥스',               sector: '소비재' },
+  { ticker: '278470.KS', name: '에이피알',               sector: '소비재' },
+  { ticker: '007340.KS', name: '부광약품',               sector: '소비재' },
+  { ticker: '026960.KS', name: '동서',                  sector: '소비재' },
+  { ticker: '145990.KS', name: '삼양사',                sector: '소비재' },
+  { ticker: '002140.KS', name: '고려산업',               sector: '소비재' },
+  { ticker: '008290.KS', name: '원풍물산',               sector: '소비재' },
+
+  // 보험 추가
+  { ticker: '001450.KS', name: '현대해상',               sector: '보험' },
+
+  // 지주 추가
+  { ticker: '383800.KS', name: 'LX홀딩스',              sector: '지주' },
+  { ticker: '001120.KS', name: 'LX인터내셔널',           sector: '지주' },
+  { ticker: '108670.KS', name: 'LX하우시스',            sector: '소재' },
+
+  // ===== 추가 KOSDAQ =====
+
+  // 바이오 추가
+  { ticker: '028300.KQ', name: 'HLB',                  sector: '바이오' },
+  { ticker: '141080.KQ', name: '리가켐바이오',            sector: '바이오' },
+  { ticker: '086900.KQ', name: '메디톡스',               sector: '바이오' },
+  { ticker: '298380.KQ', name: '에이비엘바이오',          sector: '바이오' },
+  { ticker: '287410.KQ', name: '제이시스메디칼',          sector: '바이오' },
+  { ticker: '019170.KQ', name: '신풍제약',               sector: '바이오' },
+  { ticker: '102940.KQ', name: '코오롱생명과학',          sector: '바이오' },
+  { ticker: '311690.KQ', name: 'CJ바이오사이언스',        sector: '바이오' },
+  { ticker: '016580.KQ', name: '환인제약',               sector: '바이오' },
+  { ticker: '009580.KQ', name: '무림P&P',               sector: '소재' },
+
+  // 2차전지 추가
+  { ticker: '383310.KQ', name: '에코프로에이치엔',        sector: '2차전지' },
+  { ticker: '137400.KQ', name: '피엔티',                 sector: '2차전지' },
+  { ticker: '005070.KQ', name: '코스모신소재',            sector: '2차전지' },
+  { ticker: '247540.KQ', name: '나노신소재',              sector: '2차전지' },
+
+  // 반도체 추가
+  { ticker: '084370.KQ', name: '유진테크',               sector: '반도체' },
+  { ticker: '074600.KQ', name: '원익QnC',               sector: '반도체' },
+  { ticker: '089980.KQ', name: '상아프론테크',            sector: '반도체' },
+  { ticker: '067310.KQ', name: '하나마이크론',            sector: '반도체' },
+  { ticker: '161580.KQ', name: '필옵틱스',               sector: '반도체' },
+  { ticker: '039440.KQ', name: '어보브반도체',            sector: '반도체' },
+
+  // 로봇 / AI 추가
+  { ticker: '317330.KQ', name: '루닛',                  sector: 'AI' },
+  { ticker: '196300.KQ', name: '애니젠',                sector: 'AI' },
+
+  // 소비재 추가
+  { ticker: '381970.KQ', name: '케이카',                sector: '소비재' },
+  { ticker: '094820.KQ', name: '슈피겐코리아',            sector: '소비재' },
+
+  // 엔터 추가
+  { ticker: '348370.KQ', name: '에스엠스튜디오스',        sector: '엔터' },
+  { ticker: '950170.KQ', name: 'JTC',                  sector: '엔터' },
+
+  // IT 추가
+  { ticker: '950160.KQ', name: '코오롱티슈진',           sector: 'IT' },
+  { ticker: '290120.KQ', name: '이노뎁',                sector: 'IT' },
 ];
 
 async function fetchBatch(batch: typeof STOCKS): Promise<Record<string, any>> {

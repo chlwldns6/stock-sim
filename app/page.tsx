@@ -780,9 +780,26 @@ export default function Home() {
           <div style={{ backgroundColor: '#1a1d27', border: '1px solid #f59e0b33', borderRadius: '8px', padding: '14px' }}>
             <h2 style={{ margin: '0 0 10px', fontSize: '13px', color: '#f59e0b' }}>🤖 AI 에이전트</h2>
             <div style={{ marginBottom: '10px' }}>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', fontFamily: 'monospace' }}>{fmtPrice(aiTotal)}</div>
-              <div style={{ color: aiReturn >= 0 ? '#10b981' : '#ef4444', fontSize: '13px' }}>{fmtPct(aiReturn)}</div>
-              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>현금 {fmtPrice(ai.portfolio?.cash ?? 0)}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '7px' }}>
+                <div style={{ fontSize: '17px', fontWeight: 'bold', fontFamily: 'monospace' }}>{fmtPrice(aiTotal)}</div>
+                <div style={{ color: aiReturn >= 0 ? '#10b981' : '#ef4444', fontSize: '13px', fontWeight: 'bold' }}>{fmtPct(aiReturn)}</div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>💰 투자 가능</span>
+                  <span style={{ fontFamily: 'monospace', color: '#e2e8f0' }}>{fmtPrice(ai.portfolio?.cash ?? 0)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>📊 투자 중</span>
+                  <span style={{ fontFamily: 'monospace', color: '#e2e8f0' }}>{fmtPrice(aiTotal - (ai.portfolio?.cash ?? 0))}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #2d3148', paddingTop: '4px', marginTop: '1px' }}>
+                  <span style={{ color: '#64748b' }}>💵 평가 손익</span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 'bold', color: (aiTotal - (ai.portfolio?.initial_capital ?? 10000000)) >= 0 ? '#10b981' : '#ef4444' }}>
+                    {(aiTotal - (ai.portfolio?.initial_capital ?? 10000000)) >= 0 ? '+' : ''}{fmtPrice(aiTotal - (ai.portfolio?.initial_capital ?? 10000000))}
+                  </span>
+                </div>
+              </div>
             </div>
             {ai.holdings.length > 0 && (
               <div style={{ marginBottom: '10px' }}>
@@ -818,9 +835,26 @@ export default function Home() {
           <div style={{ backgroundColor: '#1a1d27', border: '1px solid #ef444433', borderRadius: '8px', padding: '14px' }}>
             <h2 style={{ margin: '0 0 10px', fontSize: '13px', color: '#ef4444' }}>⚡ 단타봇</h2>
             <div style={{ marginBottom: '10px' }}>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', fontFamily: 'monospace' }}>{scalper.portfolio ? fmtPrice(scalperTotal) : '로딩 중...'}</div>
-              <div style={{ color: scalperReturn >= 0 ? '#10b981' : '#ef4444', fontSize: '13px' }}>{fmtPct(scalperReturn)}</div>
-              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>현금 {fmtPrice(scalper.portfolio?.cash ?? 0)}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '7px' }}>
+                <div style={{ fontSize: '17px', fontWeight: 'bold', fontFamily: 'monospace' }}>{scalper.portfolio ? fmtPrice(scalperTotal) : '로딩 중...'}</div>
+                <div style={{ color: scalperReturn >= 0 ? '#10b981' : '#ef4444', fontSize: '13px', fontWeight: 'bold' }}>{fmtPct(scalperReturn)}</div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>💰 투자 가능</span>
+                  <span style={{ fontFamily: 'monospace', color: '#e2e8f0' }}>{fmtPrice(scalper.portfolio?.cash ?? 0)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>📊 투자 중</span>
+                  <span style={{ fontFamily: 'monospace', color: '#e2e8f0' }}>{fmtPrice(scalperTotal - (scalper.portfolio?.cash ?? 0))}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #2d3148', paddingTop: '4px', marginTop: '1px' }}>
+                  <span style={{ color: '#64748b' }}>💵 평가 손익</span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 'bold', color: (scalperTotal - (scalper.portfolio?.initial_capital ?? 10000000)) >= 0 ? '#10b981' : '#ef4444' }}>
+                    {(scalperTotal - (scalper.portfolio?.initial_capital ?? 10000000)) >= 0 ? '+' : ''}{fmtPrice(scalperTotal - (scalper.portfolio?.initial_capital ?? 10000000))}
+                  </span>
+                </div>
+              </div>
             </div>
             {scalper.holdings.length > 0 && (
               <div style={{ marginBottom: '10px' }}>
@@ -856,9 +890,26 @@ export default function Home() {
           <div style={{ backgroundColor: '#1a1d27', border: '1px solid #8b5cf633', borderRadius: '8px', padding: '14px' }}>
             <h2 style={{ margin: '0 0 10px', fontSize: '13px', color: '#8b5cf6' }}>🙋 나의 자산</h2>
             <div style={{ marginBottom: '10px' }}>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', fontFamily: 'monospace' }}>{fmtPrice(userTotal)}</div>
-              <div style={{ color: userReturn >= 0 ? '#10b981' : '#ef4444', fontSize: '13px' }}>{fmtPct(userReturn)}</div>
-              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>현금 {fmtPrice(user.portfolio?.cash ?? 0)}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '7px' }}>
+                <div style={{ fontSize: '17px', fontWeight: 'bold', fontFamily: 'monospace' }}>{fmtPrice(userTotal)}</div>
+                <div style={{ color: userReturn >= 0 ? '#10b981' : '#ef4444', fontSize: '13px', fontWeight: 'bold' }}>{fmtPct(userReturn)}</div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>💰 투자 가능</span>
+                  <span style={{ fontFamily: 'monospace', color: '#e2e8f0' }}>{fmtPrice(user.portfolio?.cash ?? 0)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>📊 투자 중</span>
+                  <span style={{ fontFamily: 'monospace', color: '#e2e8f0' }}>{fmtPrice(userTotal - (user.portfolio?.cash ?? 0))}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #2d3148', paddingTop: '4px', marginTop: '1px' }}>
+                  <span style={{ color: '#64748b' }}>💵 평가 손익</span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 'bold', color: (userTotal - (user.portfolio?.initial_capital ?? 10000000)) >= 0 ? '#10b981' : '#ef4444' }}>
+                    {(userTotal - (user.portfolio?.initial_capital ?? 10000000)) >= 0 ? '+' : ''}{fmtPrice(userTotal - (user.portfolio?.initial_capital ?? 10000000))}
+                  </span>
+                </div>
+              </div>
             </div>
             <button onClick={() => setActiveTab('portfolio')} style={{ width: '100%', padding: '7px', backgroundColor: '#1e1b4b', color: '#8b5cf6', border: '1px solid #8b5cf633', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
               📊 내 포트폴리오 보기

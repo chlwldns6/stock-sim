@@ -529,6 +529,120 @@ export const STOCKS = [
   // IT 추가
   { ticker: '950160.KQ', name: '코오롱티슈진',           sector: 'IT' },
   { ticker: '290120.KQ', name: '이노뎁',                sector: 'IT' },
+
+  // ===== 소형주 추가 KOSPI =====
+
+  // 조선 소형
+  { ticker: '010620.KS', name: 'HD현대미포',             sector: '조선' },
+
+  // 철강 소형
+  { ticker: '306200.KS', name: '세아제강',               sector: '철강' },
+  { ticker: '001230.KS', name: '동국홀딩스',             sector: '철강' },
+
+  // 기계
+  { ticker: '042670.KS', name: 'HD현대인프라코어',        sector: '기계' },
+
+  // 화학 소형
+  { ticker: '005950.KS', name: '이수화학',               sector: '화학' },
+  { ticker: '009300.KS', name: '삼양홀딩스',             sector: '화학' },
+  { ticker: '001070.KS', name: '조비',                  sector: '화학' },
+  { ticker: '025860.KS', name: '남해화학',               sector: '화학' },
+
+  // 소비재 소형
+  { ticker: '161000.KS', name: '애경산업',               sector: '소비재' },
+  { ticker: '014710.KS', name: '사조씨푸드',             sector: '소비재' },
+  { ticker: '003920.KS', name: '남양유업',               sector: '소비재' },
+  { ticker: '000050.KS', name: '경방',                  sector: '소비재' },
+  { ticker: '003610.KS', name: '방림',                  sector: '소비재' },
+
+  // 소재 소형
+  { ticker: '017960.KS', name: '한국카본',               sector: '소재' },
+  { ticker: '016590.KS', name: '신대양제지',             sector: '소재' },
+
+  // 건설 소형
+  { ticker: '005960.KS', name: '동부건설',               sector: '건설' },
+  { ticker: '002780.KS', name: '진흥기업',               sector: '건설' },
+  { ticker: '001160.KS', name: '아세아시멘트',            sector: '건설' },
+  { ticker: '011700.KS', name: '한신공영',               sector: '건설' },
+
+  // 바이오 소형
+  { ticker: '115480.KS', name: '씨젠',                  sector: '바이오' },
+  { ticker: '008490.KS', name: '서흥',                  sector: '바이오' },
+
+  // 반도체 소형
+  { ticker: '007810.KS', name: '코리아써키트',            sector: '반도체' },
+
+  // 에너지 소형
+  { ticker: '024060.KS', name: '흥구석유',               sector: '에너지' },
+
+  // ===== 소형주 추가 KOSDAQ =====
+
+  // AI / 의료AI
+  { ticker: '338220.KQ', name: '뷰노',                  sector: 'AI' },
+  { ticker: '322510.KQ', name: '제이엘케이',             sector: 'AI' },
+  { ticker: '049950.KQ', name: '미래컴퍼니',             sector: 'AI' },
+
+  // 2차전지 소재
+  { ticker: '121600.KQ', name: '나노신소재',             sector: '2차전지' },
+  { ticker: '336370.KQ', name: '솔루스첨단소재',          sector: '2차전지' },
+  { ticker: '060480.KQ', name: '이엔테크놀로지',          sector: '2차전지' },
+
+  // 수소 / 에너지
+  { ticker: '271940.KQ', name: '일진하이솔루스',          sector: '에너지' },
+  { ticker: '126340.KQ', name: '비나텍',                sector: '에너지' },
+  { ticker: '263810.KQ', name: '에스퓨얼셀',             sector: '에너지' },
+
+  // IT / 핀테크 / 보안
+  { ticker: '053580.KQ', name: '웹케시',                sector: 'IT' },
+  { ticker: '150900.KQ', name: '파수',                  sector: 'IT' },
+  { ticker: '136540.KQ', name: '윈스',                  sector: 'IT' },
+  { ticker: '115450.KQ', name: '모니터랩',               sector: 'IT' },
+  { ticker: '067160.KQ', name: '아프리카TV',             sector: 'IT' },
+  { ticker: '057680.KQ', name: '나이스정보통신',          sector: 'IT' },
+  { ticker: '093380.KQ', name: '이크레더블',             sector: 'IT' },
+  { ticker: '065620.KQ', name: '한솔인티큐브',           sector: 'IT' },
+
+  // 전력 소형
+  { ticker: '033100.KQ', name: '제룡전기',               sector: '전력' },
+  { ticker: '057500.KQ', name: '광명전기',               sector: '전력' },
+  { ticker: '013360.KQ', name: '일진전기',               sector: '전력' },
+
+  // 반도체 소형
+  { ticker: '222800.KQ', name: '심텍',                  sector: '반도체' },
+  { ticker: '030530.KQ', name: '원익홀딩스',             sector: '반도체' },
+  { ticker: '098460.KQ', name: '고영',                  sector: '반도체' },
+  { ticker: '094170.KQ', name: '동운아나텍',             sector: '반도체' },
+  { ticker: '080160.KQ', name: '모아텍',                sector: '반도체' },
+
+  // 환경
+  { ticker: '029960.KQ', name: '코엔텍',                sector: '기타' },
+  { ticker: '037370.KQ', name: 'KG ETS',               sector: '기타' },
+
+  // 바이오 소형
+  { ticker: '082270.KQ', name: '젬백스',                sector: '바이오' },
+  { ticker: '225220.KQ', name: '제놀루션',               sector: '바이오' },
+  { ticker: '078160.KQ', name: '메디아나',               sector: '바이오' },
+  { ticker: '084110.KQ', name: '휴온스',                sector: '바이오' },
+  { ticker: '294630.KQ', name: '지놈앤컴퍼니',           sector: '바이오' },
+
+  // 미디어
+  { ticker: '079170.KQ', name: '한국경제TV',             sector: '엔터' },
+
+  // 소비재 소형
+  { ticker: '046250.KQ', name: '위닉스',                sector: '소비재' },
+  { ticker: '073190.KQ', name: '듀오백',                sector: '소비재' },
+  { ticker: '171090.KQ', name: '선진',                  sector: '소비재' },
+  { ticker: '065510.KS', name: '휴비스',                sector: '소비재' },
+
+  // 건설 소형
+  { ticker: '013700.KQ', name: '까뮤이앤씨',             sector: '건설' },
+  { ticker: '045100.KQ', name: '한양이엔지',             sector: '건설' },
+
+  // 소재 / 기타
+  { ticker: '025900.KQ', name: '동화기업',               sector: '소재' },
+
+  // 방산 소형
+  { ticker: '159010.KQ', name: '아스트',                sector: '방산' },
 ];
 
 async function fetchBatch(batch: typeof STOCKS): Promise<Record<string, any>> {

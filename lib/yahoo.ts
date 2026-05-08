@@ -1,3 +1,5 @@
+import https from 'https';
+
 export interface StockPrice {
   ticker: string;
   name: string;
@@ -512,7 +514,6 @@ export const STOCKS = [
   { ticker: '089980.KQ', name: '상아프론테크',            sector: '반도체' },
   { ticker: '067310.KQ', name: '하나마이크론',            sector: '반도체' },
   { ticker: '161580.KQ', name: '필옵틱스',               sector: '반도체' },
-  { ticker: '039440.KQ', name: '어보브반도체',            sector: '반도체' },
 
   // 로봇 / AI 추가
   { ticker: '317330.KQ', name: '루닛',                  sector: 'AI' },
@@ -520,15 +521,10 @@ export const STOCKS = [
 
   // 소비재 추가
   { ticker: '381970.KQ', name: '케이카',                sector: '소비재' },
-  { ticker: '094820.KQ', name: '슈피겐코리아',            sector: '소비재' },
 
   // 엔터 추가
   { ticker: '348370.KQ', name: '에스엠스튜디오스',        sector: '엔터' },
   { ticker: '950170.KQ', name: 'JTC',                  sector: '엔터' },
-
-  // IT 추가
-  { ticker: '950160.KQ', name: '코오롱티슈진',           sector: 'IT' },
-  { ticker: '290120.KQ', name: '이노뎁',                sector: 'IT' },
 
   // ===== 소형주 추가 KOSPI =====
 
@@ -751,20 +747,39 @@ export const STOCKS = [
   { ticker: '086980.KQ', name: '바이넥스',               sector: '바이오' },
 ];
 
+function httpsGet(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': '*/*',
+        'Accept-Language': 'ko-KR,ko;q=0.9',
+        'Referer': 'https://finance.yahoo.com/',
+      },
+    }, (res) => {
+      const chunks: Buffer[] = [];
+      res.on('data', (c: Buffer) => chunks.push(c));
+      res.on('end', () => {
+        const body = Buffer.concat(chunks).toString('utf-8');
+        if (res.statusCode !== 200) {
+          console.warn(`[yahoo] HTTP ${res.statusCode} body: ${body.slice(0, 300)}`);
+          reject(new Error(`HTTP ${res.statusCode}`));
+        } else {
+          resolve(body);
+        }
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(10000, () => { req.destroy(); reject(new Error('timeout')); });
+  });
+}
+
 async function fetchBatch(batch: typeof STOCKS): Promise<Record<string, any>> {
   const tickers = batch.map(s => s.ticker).join(',');
   const url = `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${tickers}&range=5d&interval=1d&_=${Date.now()}`;
   try {
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json',
-      },
-      cache: 'no-store',
-      next: { revalidate: 0 },
-    });
-    if (!res.ok) return {};
-    const data = await res.json();
+    const body = await httpsGet(url);
+    const data = JSON.parse(body);
 
     // spark 래핑 형식: {"spark":{"result":[{"symbol":...,"response":[...]}]}}
     if (data?.spark) {
@@ -784,7 +799,8 @@ async function fetchBatch(batch: typeof STOCKS): Promise<Record<string, any>> {
 
     // 티커 키 형식: {"005930.KS":{close:[...], chartPreviousClose:...}}
     return data;
-  } catch {
+  } catch (e: any) {
+    console.warn(`[yahoo] fetchBatch 오류 (${tickers.slice(0, 30)}...):`, e.message);
     return {};
   }
 }
@@ -800,7 +816,7 @@ export async function fetchStockPrices(): Promise<StockPrice[]> {
     return stockCache.data;
   }
 
-  const BATCH_SIZE = 25;
+  const BATCH_SIZE = 20;
   const batches: typeof STOCKS[] = [];
   for (let i = 0; i < STOCKS.length; i += BATCH_SIZE) {
     batches.push(STOCKS.slice(i, i + BATCH_SIZE));

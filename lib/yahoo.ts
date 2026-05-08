@@ -1,5 +1,3 @@
-import https from 'https';
-
 export interface StockPrice {
   ticker: string;
   name: string;
@@ -747,39 +745,24 @@ export const STOCKS = [
   { ticker: '086980.KQ', name: '바이넥스',               sector: '바이오' },
 ];
 
-function httpsGet(url: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const req = https.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': '*/*',
-        'Accept-Language': 'ko-KR,ko;q=0.9',
-        'Referer': 'https://finance.yahoo.com/',
-      },
-    }, (res) => {
-      const chunks: Buffer[] = [];
-      res.on('data', (c: Buffer) => chunks.push(c));
-      res.on('end', () => {
-        const body = Buffer.concat(chunks).toString('utf-8');
-        if (res.statusCode !== 200) {
-          console.warn(`[yahoo] HTTP ${res.statusCode} body: ${body.slice(0, 300)}`);
-          reject(new Error(`HTTP ${res.statusCode}`));
-        } else {
-          resolve(body);
-        }
-      });
-    });
-    req.on('error', reject);
-    req.setTimeout(10000, () => { req.destroy(); reject(new Error('timeout')); });
-  });
-}
+const YAHOO_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Accept': '*/*',
+  'Accept-Language': 'ko-KR,ko;q=0.9',
+  'Referer': 'https://finance.yahoo.com/',
+};
 
 async function fetchBatch(batch: typeof STOCKS): Promise<Record<string, any>> {
   const tickers = batch.map(s => s.ticker).join(',');
   const url = `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${tickers}&range=5d&interval=1d&_=${Date.now()}`;
   try {
-    const body = await httpsGet(url);
-    const data = JSON.parse(body);
+    const res = await fetch(url, { headers: YAHOO_HEADERS, cache: 'no-store' });
+    if (!res.ok) {
+      const body = await res.text();
+      console.warn(`[yahoo] HTTP ${res.status}: ${body.slice(0, 200)}`);
+      return {};
+    }
+    const data = await res.json();
 
     // spark 래핑 형식: {"spark":{"result":[{"symbol":...,"response":[...]}]}}
     if (data?.spark) {
@@ -800,7 +783,7 @@ async function fetchBatch(batch: typeof STOCKS): Promise<Record<string, any>> {
     // 티커 키 형식: {"005930.KS":{close:[...], chartPreviousClose:...}}
     return data;
   } catch (e: any) {
-    console.warn(`[yahoo] fetchBatch 오류 (${tickers.slice(0, 30)}...):`, e.message);
+    console.warn(`[yahoo] fetchBatch 오류:`, e.message);
     return {};
   }
 }

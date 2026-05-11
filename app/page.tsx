@@ -363,12 +363,6 @@ export default function Home() {
   const [lastUpdated, setLastUpdated] = useState('');
   const [marketStatus, setMarketStatus] = useState(getMarketStatus());
 
-  const [autoRunAi, setAutoRunAi] = useState(false);
-  const [autoRunScalper, setAutoRunScalper] = useState(false);
-  const [marketAutoEnabled, setMarketAutoEnabled] = useState(false);
-  const autoRunAiRef = useRef(false);
-  const autoRunScalperRef = useRef(false);
-  const marketAutoRef = useRef(false);
   const autoTimerAi = useRef<NodeJS.Timeout | null>(null);
   const autoTimerScalper = useRef<NodeJS.Timeout | null>(null);
   const marketWatchTimer = useRef<NodeJS.Timeout | null>(null);
@@ -456,73 +450,58 @@ export default function Home() {
     return () => clearInterval(t);
   }, []);
 
-  // AI 자동 실행 (장중일 때만)
+  // 장 시간 자동 실행 — 항상 활성화, 토글 없음
   useEffect(() => {
-    autoRunAiRef.current = autoRunAi;
-    if (autoTimerAi.current) clearInterval(autoTimerAi.current);
-    if (autoRunAi) {
-      autoTimerAi.current = setInterval(async () => {
-        if (!autoRunAiRef.current || !isMarketOpen()) return;
-        try { await fetch('/api/agent', { method: 'POST' }); await fetchAll(); } catch {}
-      }, 15 * 60 * 1000);
-    }
-    return () => { if (autoTimerAi.current) clearInterval(autoTimerAi.current); };
-  }, [autoRunAi, fetchAll]);
+    const startAgents = () => {
+      if (!autoTimerAi.current) {
+        autoTimerAi.current = setInterval(async () => {
+          if (!isMarketOpen()) return;
+          try { await fetch('/api/agent', { method: 'POST' }); await fetchAll(); } catch {}
+        }, 15 * 60 * 1000);
+      }
+      if (!autoTimerScalper.current) {
+        autoTimerScalper.current = setInterval(async () => {
+          if (!isMarketOpen()) return;
+          try { await fetch('/api/scalper', { method: 'POST' }); await fetchAll(); } catch {}
+        }, 2 * 60 * 1000);
+      }
+    };
 
-  // 단타봇 자동 실행 (장중일 때만, 2분마다)
-  useEffect(() => {
-    autoRunScalperRef.current = autoRunScalper;
-    if (autoTimerScalper.current) clearInterval(autoTimerScalper.current);
-    if (autoRunScalper) {
-      autoTimerScalper.current = setInterval(async () => {
-        if (!autoRunScalperRef.current || !isMarketOpen()) return;
-        try { await fetch('/api/scalper', { method: 'POST' }); await fetchAll(); } catch {}
-      }, 2 * 60 * 1000);
-    }
-    return () => { if (autoTimerScalper.current) clearInterval(autoTimerScalper.current); };
-  }, [autoRunScalper, fetchAll]);
+    const stopAgents = () => {
+      if (autoTimerAi.current) { clearInterval(autoTimerAi.current); autoTimerAi.current = null; }
+      if (autoTimerScalper.current) { clearInterval(autoTimerScalper.current); autoTimerScalper.current = null; }
+    };
 
-  // 장 시작 감지 — 1분마다 체크, 장이 열리는 순간 에이전트 즉시 실행
-  useEffect(() => {
-    marketAutoRef.current = marketAutoEnabled;
-    if (marketWatchTimer.current) clearInterval(marketWatchTimer.current);
+    wasMarketOpen.current = isMarketOpen();
+    if (wasMarketOpen.current) startAgents();
 
     marketWatchTimer.current = setInterval(async () => {
       const nowOpen = isMarketOpen();
       setMarketStatus(getMarketStatus());
 
-      // 장 시작 시점 감지 (닫혀 있다가 열린 첫 틱)
       if (nowOpen && !wasMarketOpen.current) {
         wasMarketOpen.current = true;
-        if (marketAutoRef.current) {
-          // 자동 토글도 켜기
-          setAutoRunAi(true);
-          setAutoRunScalper(true);
-          try {
-            await Promise.all([
-              fetch('/api/agent', { method: 'POST' }),
-              fetch('/api/scalper', { method: 'POST' }),
-            ]);
-            await fetchAll();
-          } catch {}
-        }
+        try {
+          await Promise.all([
+            fetch('/api/agent', { method: 'POST' }),
+            fetch('/api/scalper', { method: 'POST' }),
+          ]);
+          await fetchAll();
+        } catch {}
+        startAgents();
       }
 
-      // 장 마감 시점 감지 (열려 있다가 닫힌 첫 틱)
       if (!nowOpen && wasMarketOpen.current) {
         wasMarketOpen.current = false;
-        if (marketAutoRef.current) {
-          setAutoRunAi(false);
-          setAutoRunScalper(false);
-        }
+        stopAgents();
       }
     }, 60 * 1000);
 
-    // 마운트 시 현재 장 상태로 초기화
-    wasMarketOpen.current = isMarketOpen();
-
-    return () => { if (marketWatchTimer.current) clearInterval(marketWatchTimer.current); };
-  }, [marketAutoEnabled, fetchAll]);
+    return () => {
+      stopAgents();
+      if (marketWatchTimer.current) clearInterval(marketWatchTimer.current);
+    };
+  }, [fetchAll]);
 
   async function runAgent() {
     setAgentRunning(true);
@@ -633,11 +612,7 @@ export default function Home() {
     fontWeight: active ? 'bold' : 'normal', fontSize: '13px',
   });
 
-  const TOGGLE = (on: boolean, color: string) => ({
-    marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '8px 12px', backgroundColor: on ? `${color}11` : '#0f1117',
-    border: `1px solid ${on ? color : '#2d3148'}`, borderRadius: '6px', cursor: 'pointer',
-  });
+
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f1117', color: '#e2e8f0', fontFamily: 'Arial, sans-serif' }}>
@@ -744,38 +719,6 @@ export default function Home() {
             ))}
           </div>
 
-          {/* 장 자동 실행 카드 */}
-          <div style={{ backgroundColor: '#1a1d27', border: `1px solid ${marketAutoEnabled ? '#10b98144' : '#2d3148'}`, borderRadius: '8px', padding: '14px' }}>
-            <h2 style={{ margin: '0 0 10px', fontSize: '13px', color: marketAutoEnabled ? '#10b981' : '#94a3b8' }}>⏰ 장 시작 자동 실행</h2>
-            <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px', lineHeight: '1.6' }}>
-              평일 <span style={{ color: '#e2e8f0' }}>09:00</span> 장 시작 시 두 에이전트를 자동으로 켜고,
-              <span style={{ color: '#e2e8f0' }}> 15:30</span> 마감 시 자동으로 끕니다.
-            </div>
-            <div
-              onClick={() => setMarketAutoEnabled(v => !v)}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 12px', borderRadius: '6px', cursor: 'pointer',
-                backgroundColor: marketAutoEnabled ? '#052e16' : '#0f1117',
-                border: `1px solid ${marketAutoEnabled ? '#10b981' : '#2d3148'}`,
-              }}
-            >
-              <div>
-                <div style={{ fontSize: '13px', color: marketAutoEnabled ? '#10b981' : '#64748b', fontWeight: 'bold' }}>
-                  {marketAutoEnabled ? '✅ 활성화됨' : '비활성화'}
-                </div>
-                <div style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}>
-                  {marketAutoEnabled
-                    ? marketStatus.open ? '현재 장중 · 에이전트 실행 중' : `다음 개장: ${marketStatus.nextOpen}`
-                    : '클릭하여 활성화'}
-                </div>
-              </div>
-              <div style={{ width: '36px', height: '20px', backgroundColor: marketAutoEnabled ? '#10b981' : '#374151', borderRadius: '10px', position: 'relative', flexShrink: 0 }}>
-                <div style={{ position: 'absolute', top: '3px', left: marketAutoEnabled ? '18px' : '3px', width: '14px', height: '14px', backgroundColor: '#fff', borderRadius: '50%', transition: 'left 0.2s' }} />
-              </div>
-            </div>
-          </div>
-
           {/* AI 에이전트 카드 */}
           <div style={{ backgroundColor: '#1a1d27', border: '1px solid #f59e0b33', borderRadius: '8px', padding: '14px' }}>
             <h2 style={{ margin: '0 0 10px', fontSize: '13px', color: '#f59e0b' }}>🤖 AI 에이전트</h2>
@@ -818,14 +761,6 @@ export default function Home() {
             <button onClick={runAgent} disabled={agentRunning} style={{ width: '100%', padding: '7px', backgroundColor: agentRunning ? '#374151' : '#f59e0b', color: agentRunning ? '#9ca3af' : '#000', border: 'none', borderRadius: '6px', cursor: agentRunning ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
               {agentRunning ? '판단 중...' : 'AI 판단 실행'}
             </button>
-            <div onClick={() => setAutoRunAi(v => !v)} style={TOGGLE(autoRunAi, '#f59e0b')}>
-              <span style={{ fontSize: '12px', color: autoRunAi ? '#f59e0b' : '#64748b' }}>
-                15분마다 자동 실행{autoRunAi && !marketStatus.open ? <span style={{ color: '#475569' }}> (장외 대기)</span> : ''}
-              </span>
-              <div style={{ width: '32px', height: '18px', backgroundColor: autoRunAi ? '#f59e0b' : '#374151', borderRadius: '9px', position: 'relative' }}>
-                <div style={{ position: 'absolute', top: '2px', left: autoRunAi ? '16px' : '2px', width: '14px', height: '14px', backgroundColor: '#fff', borderRadius: '50%', transition: 'left 0.2s' }} />
-              </div>
-            </div>
             <button onClick={() => setActiveTab('ai_portfolio')} style={{ marginTop: '8px', width: '100%', padding: '7px', backgroundColor: '#1c1500', color: '#f59e0b', border: '1px solid #f59e0b33', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
               📊 AI 포트폴리오 보기
             </button>
@@ -873,14 +808,6 @@ export default function Home() {
             <button onClick={runScalper} disabled={scalperRunning} style={{ width: '100%', padding: '7px', backgroundColor: scalperRunning ? '#374151' : '#ef4444', color: '#fff', border: 'none', borderRadius: '6px', cursor: scalperRunning ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
               {scalperRunning ? '매매 중...' : '단타봇 실행'}
             </button>
-            <div onClick={() => setAutoRunScalper(v => !v)} style={TOGGLE(autoRunScalper, '#ef4444')}>
-              <span style={{ fontSize: '12px', color: autoRunScalper ? '#ef4444' : '#64748b' }}>
-                2분마다 자동 실행{autoRunScalper && !marketStatus.open ? <span style={{ color: '#475569' }}> (장외 대기)</span> : ''}
-              </span>
-              <div style={{ width: '32px', height: '18px', backgroundColor: autoRunScalper ? '#ef4444' : '#374151', borderRadius: '9px', position: 'relative' }}>
-                <div style={{ position: 'absolute', top: '2px', left: autoRunScalper ? '16px' : '2px', width: '14px', height: '14px', backgroundColor: '#fff', borderRadius: '50%', transition: 'left 0.2s' }} />
-              </div>
-            </div>
             <button onClick={() => setActiveTab('scalper_portfolio')} style={{ marginTop: '8px', width: '100%', padding: '7px', backgroundColor: '#2d0a0a', color: '#ef4444', border: '1px solid #ef444433', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
               📊 단타봇 포트폴리오 보기
             </button>

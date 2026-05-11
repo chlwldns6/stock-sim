@@ -454,30 +454,35 @@ export default function Home() {
 
   // 장 시간 자동 실행 — 항상 활성화, 토글 없음
   useEffect(() => {
+    const fmtRunResult = (data: any) => {
+      if (!data || data.error) return `오류: ${data?.error ?? '알 수 없음'}`;
+      if (data.action === 'BUY') return `매수 ${data.name ?? '?'} ${data.qty ?? 0}주`;
+      if (data.action === 'SELL') return `매도 ${data.name ?? '?'} ${data.qty ?? 0}주`;
+      return `관망`;
+    };
+
     const runAi = async () => {
+      const time = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
       try {
         const res = await fetch('/api/agent', { method: 'POST' });
-        const data = await res.json();
-        const time = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-        const result = data.action === 'BUY' ? `매수 ${data.name} ${data.qty}주`
-          : data.action === 'SELL' ? `매도 ${data.name} ${data.qty}주`
-          : `관망`;
-        setLastAiRun({ time, result });
+        const data = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        setLastAiRun({ time, result: fmtRunResult(data) });
         await fetchAll();
-      } catch {}
+      } catch (e: any) {
+        setLastAiRun({ time, result: `오류: ${e?.message ?? '네트워크 실패'}` });
+      }
     };
 
     const runScalperBot = async () => {
+      const time = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
       try {
         const res = await fetch('/api/scalper', { method: 'POST' });
-        const data = await res.json();
-        const time = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-        const result = data.action === 'BUY' ? `매수 ${data.name} ${data.qty}주`
-          : data.action === 'SELL' ? `매도 ${data.name} ${data.qty}주`
-          : `관망`;
-        setLastScalperRun({ time, result });
+        const data = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        setLastScalperRun({ time, result: fmtRunResult(data) });
         await fetchAll();
-      } catch {}
+      } catch (e: any) {
+        setLastScalperRun({ time, result: `오류: ${e?.message ?? '네트워크 실패'}` });
+      }
     };
 
     const startAgents = () => {
@@ -789,7 +794,7 @@ export default function Home() {
               {agentRunning ? '판단 중...' : 'AI 판단 실행'}
             </button>
             {lastAiRun && (
-              <div style={{ marginTop: '6px', fontSize: '11px', color: lastAiRun.result === '관망' ? '#475569' : '#10b981', padding: '4px 8px', backgroundColor: '#0f1117', borderRadius: '4px' }}>
+              <div style={{ marginTop: '6px', fontSize: '11px', color: lastAiRun.result.startsWith('오류') ? '#ef4444' : lastAiRun.result === '관망' ? '#475569' : '#10b981', padding: '4px 8px', backgroundColor: '#0f1117', borderRadius: '4px' }}>
                 {lastAiRun.time} · {lastAiRun.result}
               </div>
             )}
@@ -841,7 +846,7 @@ export default function Home() {
               {scalperRunning ? '매매 중...' : '단타봇 실행'}
             </button>
             {lastScalperRun && (
-              <div style={{ marginTop: '6px', fontSize: '11px', color: lastScalperRun.result === '관망' ? '#475569' : '#10b981', padding: '4px 8px', backgroundColor: '#0f1117', borderRadius: '4px' }}>
+              <div style={{ marginTop: '6px', fontSize: '11px', color: lastScalperRun.result.startsWith('오류') ? '#ef4444' : lastScalperRun.result === '관망' ? '#475569' : '#10b981', padding: '4px 8px', backgroundColor: '#0f1117', borderRadius: '4px' }}>
                 {lastScalperRun.time} · {lastScalperRun.result}
               </div>
             )}

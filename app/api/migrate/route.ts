@@ -6,21 +6,22 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// 한 번만 실행: trades 테이블에 realized_pnl, avg_price 컬럼 추가
 export async function POST() {
   const results: Record<string, string> = {};
 
-  // realized_pnl 컬럼 추가 시도 (이미 있으면 무시)
-  const { error: e1 } = await supabase.rpc('exec_sql', {
-    sql: 'ALTER TABLE trades ADD COLUMN IF NOT EXISTS realized_pnl integer;',
-  });
-  results.realized_pnl = e1 ? `error: ${e1.message}` : 'ok';
+  // 컬럼 존재 여부를 직접 insert 테스트로 확인 후 추가
+  // Supabase에서 exec_sql RPC 없이 컬럼 추가하는 방법:
+  // information_schema 조회로 컬럼 존재 확인
+  const { data: cols } = await supabase
+    .from('information_schema.columns' as any)
+    .select('column_name')
+    .eq('table_name', 'trades')
+    .in('column_name', ['avg_price', 'realized_pnl']);
 
-  // avg_price 컬럼 추가 시도
-  const { error: e2 } = await supabase.rpc('exec_sql', {
-    sql: 'ALTER TABLE trades ADD COLUMN IF NOT EXISTS avg_price integer;',
-  });
-  results.avg_price = e2 ? `error: ${e2.message}` : 'ok';
+  const existingCols = (cols ?? []).map((c: any) => c.column_name);
+  results.existing_columns = existingCols.join(', ') || 'none';
+  results.note = '컬럼 추가는 Supabase SQL Editor에서 아래 SQL을 직접 실행하세요.';
+  results.sql = 'ALTER TABLE trades ADD COLUMN IF NOT EXISTS avg_price integer; ALTER TABLE trades ADD COLUMN IF NOT EXISTS realized_pnl integer;';
 
   return NextResponse.json(results);
 }

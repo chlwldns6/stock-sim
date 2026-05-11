@@ -172,18 +172,28 @@ export async function executeTrade(params: {
     }
 
     const realizedPnl = Math.round((params.price - existing.avg_price) * params.qty);
-    await supabase.from('trades').insert({
+    const { error: sellErr } = await supabase.from('trades').insert({
       player: params.player, action: params.action, ticker: params.ticker,
       name: params.name, qty: params.qty, price: params.price,
       avg_price: existing.avg_price,
       reason: params.reason ?? null, realized_pnl: realizedPnl,
     });
+    if (sellErr) {
+      // avg_price/realized_pnl 컬럼 미존재 시 기본 필드로 재시도
+      const { error: fallbackErr } = await supabase.from('trades').insert({
+        player: params.player, action: params.action, ticker: params.ticker,
+        name: params.name, qty: params.qty, price: params.price,
+        reason: params.reason ?? null,
+      });
+      if (fallbackErr) console.error('[sell trade insert error]', fallbackErr.message);
+    }
     return;
   }
 
-  await supabase.from('trades').insert({
+  const { error: buyErr } = await supabase.from('trades').insert({
     player: params.player, action: params.action, ticker: params.ticker,
     name: params.name, qty: params.qty, price: params.price,
     reason: params.reason ?? null,
   });
+  if (buyErr) console.error('[buy trade insert error]', buyErr.message);
 }

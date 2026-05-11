@@ -25,7 +25,7 @@ export async function runScalper(): Promise<Record<string, unknown>> {
       getHoldings('scalper'),
     ]);
 
-    if (!portfolio) return { error: 'scalper 포트폴리오 없음' };
+    if (!portfolio) return { action: 'HOLD', reason: '단타봇 포트폴리오를 찾을 수 없습니다.' };
 
     const validStocks = stocks.filter(s => s.price > 0);
     const holdingTickers = holdings.map(h => h.ticker);
@@ -193,6 +193,9 @@ JSON만 답하세요.`;
     });
 
     return { ...decision, qty, price: stock.price };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { action: 'HOLD', reason: `단타봇 내부 오류: ${msg}` };
   } finally {
     scalperRunning = false;
   }

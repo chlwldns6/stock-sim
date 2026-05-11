@@ -25,7 +25,7 @@ export async function runAgent(): Promise<Record<string, unknown>> {
       getHoldings('ai'),
     ]);
 
-    if (!portfolio) return { error: 'AI 포트폴리오 없음' };
+    if (!portfolio) return { action: 'HOLD', reason: 'AI 포트폴리오를 찾을 수 없습니다.' };
 
     const validStocks = stocks.filter(s => s.price > 0);
     const holdingTickers = holdings.map(h => h.ticker);
@@ -180,6 +180,9 @@ JSON만 답하세요.`;
     });
 
     return { ...decision, qty, price: stock.price };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { action: 'HOLD', reason: `AI 내부 오류: ${msg}` };
   } finally {
     agentRunning = false;
   }

@@ -15,10 +15,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ skipped: true, reason: '장외 시간' });
   }
 
-  try {
-    const result = await runAgent();
-    return NextResponse.json(result);
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
-  }
+  const result = await runAgent();
+  return NextResponse.json(result);
 }

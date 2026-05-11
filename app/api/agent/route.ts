@@ -7,7 +7,8 @@ export async function POST() {
   try {
     const result = await runAgent();
     return NextResponse.json(result);
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ action: 'HOLD', reason: `서버 오류: ${msg}` });
   }
 }

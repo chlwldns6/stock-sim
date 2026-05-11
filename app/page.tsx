@@ -470,8 +470,15 @@ export default function Home() {
       const res = await fetch('/api/agent', { method: 'POST' });
       const data = await res.json();
       await fetchAll();
-      alert(data.action === 'HOLD' ? `AI 관망\n${data.reason}` : `AI ${data.action === 'BUY' ? '매수' : '매도'}: ${data.name} ${data.qty}주\n${data.reason}`);
-    } catch { alert('AI 실행 오류'); } finally { setAgentRunning(false); }
+      if (data.action === 'HOLD') {
+        alert(`AI 관망\n${data.reason}`);
+      } else {
+        alert(`AI ${data.action === 'BUY' ? '매수' : '매도'}: ${data.name} ${data.qty}주\n${data.reason}`);
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      alert(`AI 네트워크 오류: ${msg}`);
+    } finally { setAgentRunning(false); }
   }
 
   async function runScalper() {
@@ -480,8 +487,15 @@ export default function Home() {
       const res = await fetch('/api/scalper', { method: 'POST' });
       const data = await res.json();
       await fetchAll();
-      alert(data.action === 'HOLD' ? `단타봇 관망\n${data.reason}` : `단타봇 ${data.action === 'BUY' ? '매수' : '매도'}: ${data.name} ${data.qty}주\n${data.reason}`);
-    } catch { alert('단타봇 실행 오류'); } finally { setScalperRunning(false); }
+      if (data.action === 'HOLD') {
+        alert(`단타봇 관망\n${data.reason}`);
+      } else {
+        alert(`단타봇 ${data.action === 'BUY' ? '매수' : '매도'}: ${data.name} ${data.qty}주\n${data.reason}`);
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      alert(`단타봇 네트워크 오류: ${msg}`);
+    } finally { setScalperRunning(false); }
   }
 
   async function selectTicker(ticker: string) {

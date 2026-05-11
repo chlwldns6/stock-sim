@@ -4,7 +4,7 @@ import { getPortfolio, getHoldings, executeTrade } from '@/lib/db';
 import { getDeadlineContext } from '@/lib/deadline';
 import { isKoreanHoliday } from '@/lib/holidays';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY_SCALPER ?? process.env.GEMINI_API_KEY!);
 
 let scalperRunning = false;
 

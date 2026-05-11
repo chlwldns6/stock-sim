@@ -1,15 +1,11 @@
-name: Trading Agents
+name: AI 에이전트
+# KST 09:00~15:30 = UTC 00:00~06:30, 평일 15분마다
 
 on:
   schedule:
-    # KST 09:00~15:30 = UTC 00:00~06:30, 평일(월~금)
-    # AI 에이전트: 15분마다
     - cron: '0,15,30,45 0-5 * * 1-5'
     - cron: '0,15 6 * * 1-5'
-    # 단타봇: 5분마다 (GitHub Actions 최소 단위)
-    - cron: '*/5 0-5 * * 1-5'
-    - cron: '0,5,10,15,20,25 6 * * 1-5'
-  workflow_dispatch: # 수동 실행 버튼
+  workflow_dispatch:
 
 jobs:
   ai-agent:
@@ -24,18 +20,4 @@ jobs:
           echo "AI Agent response: $RESPONSE"
           if [ "$RESPONSE" != "200" ]; then
             echo "::warning::AI Agent returned HTTP $RESPONSE"
-          fi
-
-  scalper:
-    name: 단타봇
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run Scalper
-        run: |
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X GET "https://stock-sim-gules.vercel.app/api/cron/scalper" \
-            -H "Authorization: Bearer ${{ secrets.CRON_KEY }}")
-          echo "Scalper response: $RESPONSE"
-          if [ "$RESPONSE" != "200" ]; then
-            echo "::warning::Scalper returned HTTP $RESPONSE"
           fi

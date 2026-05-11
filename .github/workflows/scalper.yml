@@ -1,0 +1,23 @@
+name: 단타봇
+# KST 09:00~15:30 = UTC 00:00~06:30, 평일 5분마다
+
+on:
+  schedule:
+    - cron: '*/5 0-5 * * 1-5'
+    - cron: '0,5,10,15,20,25 6 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  scalper:
+    name: 단타봇
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Scalper
+        run: |
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X GET "https://stock-sim-gules.vercel.app/api/cron/scalper" \
+            -H "Authorization: Bearer ${{ secrets.CRON_KEY }}")
+          echo "Scalper response: $RESPONSE"
+          if [ "$RESPONSE" != "200" ]; then
+            echo "::warning::Scalper returned HTTP $RESPONSE"
+          fi

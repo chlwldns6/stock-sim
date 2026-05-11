@@ -473,7 +473,14 @@ export default function Home() {
     };
 
     wasMarketOpen.current = isMarketOpen();
-    if (wasMarketOpen.current) startAgents();
+    if (wasMarketOpen.current) {
+      // 장중에 페이지 로드 시 즉시 실행 후 인터벌 시작
+      Promise.all([
+        fetch('/api/agent', { method: 'POST' }),
+        fetch('/api/scalper', { method: 'POST' }),
+      ]).then(() => fetchAll()).catch(() => {});
+      startAgents();
+    }
 
     marketWatchTimer.current = setInterval(async () => {
       const nowOpen = isMarketOpen();

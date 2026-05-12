@@ -1,14 +1,14 @@
-name: AI Agent Scheduler
+name: Scalper Scheduler
 
 on:
   schedule:
     # 평일 09:00~15:30 KST = UTC 00:00~06:30
-    # 30분마다 실행
-    - cron: '*/30 0-6 * * 1-5'
+    # 10분마다 실행
+    - cron: '*/10 0-6 * * 1-5'
   workflow_dispatch: # 수동 실행 버튼
 
 jobs:
-  run-agent:
+  run-scalper:
     runs-on: ubuntu-latest
     steps:
       - name: Check market is open (KST 09:00–15:30, 공휴일 제외)
@@ -40,9 +40,9 @@ jobs:
             echo "open=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Run AI Agent
+      - name: Run Scalper
         if: steps.check.outputs.open == 'true'
         run: |
-          curl -s -X POST "${{ secrets.APP_URL }}/api/agent" \
+          curl -s -X POST "${{ secrets.APP_URL }}/api/scalper" \
             -H "Content-Type: application/json" \
-            --max-time 65 || echo "agent timeout/error (ignored)"
+            --max-time 65 || echo "scalper timeout/error (ignored)"

@@ -141,7 +141,7 @@ ${sellCandidates}
 
 JSON만 답하세요.`;
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { thinkingConfig: { thinkingBudget: 0 } } as any });
     const result = await model.generateContent(prompt);
     const raw = result.response.text().trim();
 
